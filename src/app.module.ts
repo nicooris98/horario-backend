@@ -22,7 +22,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
           password: configService.get<string>('DB_PASS'),
           port: configService.get<number>('DB_PORT'),
           entities: [
-          __dirname + '/../**/*.entity{.ts,.js}',
+          __dirname + '/**/*.entity{.ts,.js}',
       ],
           synchronize: true
         }
