@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { AsignaturasModule } from './modules/asignaturas/asignaturas.module';
+import { SubjectsModule } from './modules/subjects/subjects.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -28,7 +28,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         }
       }
     }),
-    AsignaturasModule,
+    SubjectsModule,
     AuthModule
   ],
   controllers: [],

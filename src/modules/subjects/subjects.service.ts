@@ -3,7 +3,7 @@ import { CreateAsignaturaDto } from './dto/create-asignatura.dto';
 import { UpdateAsignaturaDto } from './dto/update-asignatura.dto';
 
 @Injectable()
-export class AsignaturasService {
+export class SubjectsService {
   create(createAsignaturaDto: CreateAsignaturaDto) {
     return 'This action adds a new asignatura';
   }

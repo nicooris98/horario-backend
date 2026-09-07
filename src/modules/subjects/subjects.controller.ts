@@ -1,34 +1,34 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { AsignaturasService } from './asignaturas.service';
+import { SubjectsService } from './subjects.service';
 import { CreateAsignaturaDto } from './dto/create-asignatura.dto';
 import { UpdateAsignaturaDto } from './dto/update-asignatura.dto';
 
-@Controller('asignaturas')
-export class AsignaturasController {
-  constructor(private readonly asignaturasService: AsignaturasService) {}
+@Controller('subjects')
+export class SubjectsController {
+  constructor(private readonly subjectsService: SubjectsService) {}
 
   @Post()
   create(@Body() createAsignaturaDto: CreateAsignaturaDto) {
-    return this.asignaturasService.create(createAsignaturaDto);
+    return this.subjectsService.create(createAsignaturaDto);
   }
 
   @Get()
   findAll() {
-    return this.asignaturasService.findAll();
+    return this.subjectsService.findAll();
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.asignaturasService.findOne(+id);
+    return this.subjectsService.findOne(+id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateAsignaturaDto: UpdateAsignaturaDto) {
-    return this.asignaturasService.update(+id, updateAsignaturaDto);
+    return this.subjectsService.update(+id, updateAsignaturaDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.asignaturasService.remove(+id);
+    return this.subjectsService.remove(+id);
   }
 }
