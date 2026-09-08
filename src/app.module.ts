@@ -3,6 +3,7 @@ import { SubjectsModule } from './modules/subjects/subjects.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DegreeModule } from './modules/degrees/degrees.module';
 
 @Module({
   imports: [
@@ -29,7 +30,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       }
     }),
     SubjectsModule,
-    AuthModule
+    AuthModule,
+    DegreeModule
   ],
   controllers: [],
   providers: [],
