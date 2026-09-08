@@ -4,6 +4,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DegreeModule } from './modules/degrees/degrees.module';
+import { StudyPlanModule } from './modules/study_plans/study_plans.module';
 
 @Module({
   imports: [
@@ -31,7 +32,8 @@ import { DegreeModule } from './modules/degrees/degrees.module';
     }),
     SubjectsModule,
     AuthModule,
-    DegreeModule
+    DegreeModule,
+    StudyPlanModule
   ],
   controllers: [],
   providers: [],

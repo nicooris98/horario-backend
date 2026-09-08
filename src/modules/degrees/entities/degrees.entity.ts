@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { StudyPlan } from '../../study_plans/entities/study_plans.entity';
 
 @Entity('carreras')
 export class Degree {
@@ -10,4 +11,7 @@ export class Degree {
 
     @Column({ default: true })
     estado: boolean;
+
+    @OneToMany(() => StudyPlan, (studyPlan) => studyPlan.carrera)
+    planes_estudio: StudyPlan[];
 }
