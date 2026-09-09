@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Degree } from '../../degrees/entities/degrees.entity';
 import { StudyPlanShift } from '../../study_plan_shifts/entities/study_plan_shift.entity';
+import { Subject } from '../../subjects/entities/subject.entity';
 
 @Entity('planes_estudio')
 @Index('UQ_planes_estudio_resolucion', ['resolucion_ministerial'], {
@@ -53,4 +54,7 @@ export class StudyPlan {
 
     @OneToMany(() => StudyPlanShift, (studyPlanShift) => studyPlanShift.plan_estudio)
     planes_estudio: StudyPlanShift[];
+
+    @OneToMany(() => Subject, (subject) => subject.plan_estudio)
+    asignaturas: Subject[];
 }
