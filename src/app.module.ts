@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DegreeModule } from './modules/degrees/degrees.module';
 import { StudyPlanModule } from './modules/study_plans/study_plans.module';
+import { ShiftModule } from './modules/shifts/shifts.module';
 
 @Module({
   imports: [
@@ -33,7 +34,8 @@ import { StudyPlanModule } from './modules/study_plans/study_plans.module';
     SubjectsModule,
     AuthModule,
     DegreeModule,
-    StudyPlanModule
+    StudyPlanModule,
+    ShiftModule
   ],
   controllers: [],
   providers: [],
