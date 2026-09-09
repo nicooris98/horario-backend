@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DegreeModule } from './modules/degrees/degrees.module';
 import { StudyPlanModule } from './modules/study_plans/study_plans.module';
 import { ShiftModule } from './modules/shifts/shifts.module';
+import { StudyPlanShiftsModule } from './modules/study_plan_shifts/study_plan_shifts.module';
 
 @Module({
   imports: [
@@ -35,7 +36,8 @@ import { ShiftModule } from './modules/shifts/shifts.module';
     AuthModule,
     DegreeModule,
     StudyPlanModule,
-    ShiftModule
+    ShiftModule,
+    StudyPlanShiftsModule
   ],
   controllers: [],
   providers: [],

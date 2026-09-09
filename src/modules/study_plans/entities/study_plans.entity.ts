@@ -4,10 +4,12 @@ import {
     Index,
     JoinColumn,
     ManyToOne,
+    OneToMany,
     PrimaryGeneratedColumn,
     RelationId,
 } from 'typeorm';
 import { Degree } from '../../degrees/entities/degrees.entity';
+import { StudyPlanShift } from '../../study_plan_shifts/entities/study_plan_shift.entity';
 
 @Entity('planes_estudio')
 @Index('UQ_planes_estudio_resolucion', ['resolucion_ministerial'], {
@@ -48,4 +50,7 @@ export class StudyPlan {
 
     @RelationId((studyPlan: StudyPlan) => studyPlan.carrera)
     carrera_id: number;
+
+    @OneToMany(() => StudyPlanShift, (studyPlanShift) => studyPlanShift.plan_estudio)
+    planes_estudio: StudyPlanShift[];
 }
