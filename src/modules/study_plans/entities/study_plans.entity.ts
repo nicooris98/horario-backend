@@ -16,10 +16,6 @@ import { Subject } from '../../subjects/entities/subject.entity';
 @Index('UQ_planes_estudio_resolucion', ['resolucion_ministerial'], {
     unique: true,
 })
-@Index('UQ_planes_estudio_carrera_vigente', ['carrera'], {
-    unique: true,
-    where: '"vigente" = true',
-})
 export class StudyPlan {
     @PrimaryGeneratedColumn()
     id: number;
@@ -33,14 +29,14 @@ export class StudyPlan {
     @Column()
     nombre: string;
 
-    @Column({ type: 'float' })
-    duracion: number;
+    @Column({ type: 'date' })
+    fecha_desde: string;
 
-    @Column({ default: false })
-    vigente: boolean;
+    @Column({ type: 'date', nullable: true })
+    fecha_hasta: string | null;
 
     @Column({ default: true })
-    activa: boolean;
+    estado: boolean;
 
     @ManyToOne(() => Degree, (degree) => degree.planes_estudio, {
         nullable: false,

@@ -23,9 +23,12 @@ export class StudyPlanService {
   async create(createStudyPlanDto: CreateStudyPlanDto) {
     this.validateNombre(createStudyPlanDto.nombre);
     this.validateCarreraId(createStudyPlanDto.carrera_id);
-    this.validateDuracion(createStudyPlanDto.duracion);
-    this.validateVigente(createStudyPlanDto.vigente);
-    this.validateActiva(createStudyPlanDto.activa);
+    this.validateFecha(createStudyPlanDto.fecha_desde, 'fecha_desde');
+    if (createStudyPlanDto.fecha_hasta !== undefined && createStudyPlanDto.fecha_hasta !== null) {
+      this.validateFecha(createStudyPlanDto.fecha_hasta, 'fecha_hasta');
+    }
+    this.validateFechaHasta(createStudyPlanDto.fecha_desde, createStudyPlanDto.fecha_hasta);
+    this.validateEstado(createStudyPlanDto.estado);
     this.validateResolucionMinisterial(createStudyPlanDto.resolucion_ministerial);
     this.validateAnioImplementacion(createStudyPlanDto.anio_implementacion);
 
@@ -34,18 +37,12 @@ export class StudyPlanService {
       createStudyPlanDto.resolucion_ministerial.trim();
     await this.ensureUniqueResolution(resolucionMinisterial);
 
-    const vigente = createStudyPlanDto.vigente ?? false;
-    const activa = createStudyPlanDto.activa ?? true;
-    if (vigente) {
-      await this.ensureNoVigentePlan(createStudyPlanDto.carrera_id);
-    }
-
     const studyPlan = this.studyPlanRepository.create({
       nombre: createStudyPlanDto.nombre.trim(),
       carrera,
-      duracion: createStudyPlanDto.duracion,
-      vigente,
-      activa,
+      fecha_desde: createStudyPlanDto.fecha_desde,
+      fecha_hasta: createStudyPlanDto.fecha_hasta ?? null,
+      estado: createStudyPlanDto.estado ?? true,
       resolucion_ministerial: resolucionMinisterial,
       anio_implementacion: createStudyPlanDto.anio_implementacion,
     });
@@ -83,30 +80,33 @@ export class StudyPlanService {
     if (updateStudyPlanDto.carrera_id !== undefined) {
       this.validateCarreraId(updateStudyPlanDto.carrera_id);
       studyPlan.carrera = await this.findCarrera(updateStudyPlanDto.carrera_id);
-      if (studyPlan.vigente) {
-        await this.ensureNoVigentePlan(updateStudyPlanDto.carrera_id, studyPlan.id);
+    }
+
+    const fechaDesde = updateStudyPlanDto.fecha_desde ?? studyPlan.fecha_desde;
+    const fechaHasta =
+      updateStudyPlanDto.fecha_hasta !== undefined
+        ? updateStudyPlanDto.fecha_hasta
+        : studyPlan.fecha_hasta;
+    if (updateStudyPlanDto.fecha_desde !== undefined) {
+      this.validateFecha(updateStudyPlanDto.fecha_desde, 'fecha_desde');
+      studyPlan.fecha_desde = updateStudyPlanDto.fecha_desde;
+    }
+    if (updateStudyPlanDto.fecha_hasta !== undefined) {
+      if (updateStudyPlanDto.fecha_hasta !== null) {
+        this.validateFecha(updateStudyPlanDto.fecha_hasta, 'fecha_hasta');
       }
+      studyPlan.fecha_hasta = updateStudyPlanDto.fecha_hasta;
+    }
+    if (
+      updateStudyPlanDto.fecha_desde !== undefined ||
+      updateStudyPlanDto.fecha_hasta !== undefined
+    ) {
+      this.validateFechaHasta(fechaDesde, fechaHasta ?? undefined);
     }
 
-    if (updateStudyPlanDto.duracion !== undefined) {
-      this.validateDuracion(updateStudyPlanDto.duracion);
-      studyPlan.duracion = updateStudyPlanDto.duracion;
-    }
-
-    if (updateStudyPlanDto.vigente !== undefined) {
-      this.validateVigente(updateStudyPlanDto.vigente);
-      if (updateStudyPlanDto.vigente) {
-        await this.ensureNoVigentePlan(
-          updateStudyPlanDto.carrera_id ?? studyPlan.carrera_id,
-          studyPlan.id,
-        );
-      }
-      studyPlan.vigente = updateStudyPlanDto.vigente;
-    }
-
-    if (updateStudyPlanDto.activa !== undefined) {
-      this.validateActiva(updateStudyPlanDto.activa);
-      studyPlan.activa = updateStudyPlanDto.activa;
+    if (updateStudyPlanDto.estado !== undefined) {
+      this.validateEstado(updateStudyPlanDto.estado);
+      studyPlan.estado = updateStudyPlanDto.estado;
     }
 
     if (updateStudyPlanDto.resolucion_ministerial !== undefined) {
@@ -141,21 +141,6 @@ export class StudyPlanService {
     return carrera;
   }
 
-  private async ensureNoVigentePlan(carreraId: number, excludedId?: number) {
-    const vigentePlan = await this.studyPlanRepository.findOne({
-      where: {
-        carrera: { id: carreraId },
-        vigente: true,
-      },
-    });
-
-    if (vigentePlan && vigentePlan.id !== excludedId) {
-      throw new ConflictException(
-        `La carrera con id ${carreraId} ya tiene un plan de estudio vigente`,
-      );
-    }
-  }
-
   private async ensureUniqueResolution(
     resolucionMinisterial: string,
     excludedId?: number,
@@ -183,21 +168,23 @@ export class StudyPlanService {
     }
   }
 
-  private validateDuracion(duracion: number) {
-    if (!Number.isFinite(duracion) || duracion <= 0) {
-      throw new BadRequestException('La duracion debe ser un numero positivo');
+  private validateFecha(fecha: string | undefined, campo: string) {
+    if (!fecha || Number.isNaN(Date.parse(fecha))) {
+      throw new BadRequestException(`El campo ${campo} debe ser una fecha valida`);
     }
   }
 
-  private validateVigente(vigente: boolean | undefined) {
-    if (vigente !== undefined && typeof vigente !== 'boolean') {
-      throw new BadRequestException('El campo vigente debe ser booleano');
+  private validateFechaHasta(fechaDesde: string, fechaHasta?: string | null) {
+    if (fechaHasta && new Date(fechaHasta) < new Date(fechaDesde)) {
+      throw new BadRequestException(
+        'La fecha_hasta no puede ser anterior a la fecha_desde',
+      );
     }
   }
 
-  private validateActiva(activa: boolean | undefined) {
-    if (activa !== undefined && typeof activa !== 'boolean') {
-      throw new BadRequestException('El campo activa debe ser booleano');
+  private validateEstado(estado: boolean | undefined) {
+    if (estado !== undefined && typeof estado !== 'boolean') {
+      throw new BadRequestException('El campo estado debe ser booleano');
     }
   }
 
