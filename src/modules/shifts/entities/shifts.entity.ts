@@ -16,8 +16,14 @@ export class Shift {
   @Column()
   nombre: string;
 
+  @Column({ type: 'time' })
+  hora_inicio: string;
+
+  @Column({ type: 'time' })
+  hora_fin: string;
+
   @Column({ default: true })
-  activo: boolean;
+  estado: boolean;
 
   @OneToMany(() => StudyPlanShift, (studyPlanShift) => studyPlanShift.turno)
   planes_estudio: StudyPlanShift[];

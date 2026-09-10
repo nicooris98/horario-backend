@@ -1,4 +1,6 @@
 export class CreateShiftDto {
     nombre: string;
-    activo?: boolean;
+    hora_inicio: string;
+    hora_fin: string;
+    estado?: boolean;
 }

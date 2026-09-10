@@ -17,12 +17,15 @@ export class ShiftService {
   
   async create(createShiftDto: CreateShiftDto) {
     this.validateNombre(createShiftDto.nombre);
-    this.validateActivo(createShiftDto.activo);
+    this.validateHorario(createShiftDto.hora_inicio, createShiftDto.hora_fin);
+    this.validateEstado(createShiftDto.estado);
     const nombre = this.normalizeNombre(createShiftDto.nombre);
     await this.ensureUniqueNombre(nombre);
     const shift = this.shiftRepository.create({
       nombre,
-      activo: createShiftDto.activo ?? true,
+      hora_inicio: createShiftDto.hora_inicio,
+      hora_fin: createShiftDto.hora_fin,
+      estado: createShiftDto.estado ?? true,
     });
     return this.shiftRepository.save(shift);
   }
@@ -53,9 +56,20 @@ export class ShiftService {
       shift.nombre = nombre;
     }
 
-    if (updateShiftDto.activo !== undefined) {
-      this.validateActivo(updateShiftDto.activo);
-      shift.activo = updateShiftDto.activo;
+    const horaInicio = updateShiftDto.hora_inicio ?? shift.hora_inicio;
+    const horaFin = updateShiftDto.hora_fin ?? shift.hora_fin;
+    if (
+      updateShiftDto.hora_inicio !== undefined ||
+      updateShiftDto.hora_fin !== undefined
+    ) {
+      this.validateHorario(horaInicio, horaFin);
+      shift.hora_inicio = horaInicio;
+      shift.hora_fin = horaFin;
+    }
+
+    if (updateShiftDto.estado !== undefined) {
+      this.validateEstado(updateShiftDto.estado);
+      shift.estado = updateShiftDto.estado;
     }
 
     return this.shiftRepository.save(shift);
@@ -84,9 +98,29 @@ export class ShiftService {
     }
   }
 
-  private validateActivo(activo: boolean | undefined) {
-    if (activo !== undefined && typeof activo !== 'boolean') {
-      throw new BadRequestException('El campo activo debe ser booleano');
+  private validateEstado(estado: boolean | undefined) {
+    if (estado !== undefined && typeof estado !== 'boolean') {
+      throw new BadRequestException('El campo estado debe ser booleano');
     }
+  }
+
+  private validateHorario(horaInicio: string, horaFin: string) {
+    const horaPattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+    if (!horaPattern.test(horaInicio) || !horaPattern.test(horaFin)) {
+      throw new BadRequestException(
+        'hora_inicio y hora_fin deben tener el formato HH:mm',
+      );
+    }
+
+    if (this.toMinutes(horaFin) <= this.toMinutes(horaInicio)) {
+      throw new BadRequestException(
+        'hora_fin debe ser posterior a hora_inicio',
+      );
+    }
+  }
+
+  private toMinutes(hora: string) {
+    const [hours, minutes] = hora.split(':').map(Number);
+    return hours * 60 + minutes;
   }
 }
