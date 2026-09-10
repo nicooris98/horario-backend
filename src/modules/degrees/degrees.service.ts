@@ -18,10 +18,12 @@ export class DegreeService {
 
   create(createDegreeDto: CreateDegreeDto) {
     this.validateNombre(createDegreeDto.nombre);
+    this.validateDuracionAnios(createDegreeDto.duracion_anios);
     this.validateEstado(createDegreeDto.estado);
 
     const degree = this.degreeRepository.create({
       nombre: createDegreeDto.nombre.trim(),
+      duracion_anios: createDegreeDto.duracion_anios,
       estado: createDegreeDto.estado ?? true,
     });
 
@@ -50,6 +52,11 @@ export class DegreeService {
       degree.nombre = updateDegreeDto.nombre.trim();
     }
 
+    if (updateDegreeDto.duracion_anios !== undefined) {
+      this.validateDuracionAnios(updateDegreeDto.duracion_anios);
+      degree.duracion_anios = updateDegreeDto.duracion_anios;
+    }
+
     if (updateDegreeDto.estado !== undefined) {
       this.validateEstado(updateDegreeDto.estado);
       degree.estado = updateDegreeDto.estado;
@@ -73,6 +80,14 @@ export class DegreeService {
   private validateEstado(estado: boolean | undefined) {
     if (estado !== undefined && typeof estado !== 'boolean') {
       throw new BadRequestException('estado debe ser booleano');
+    }
+  }
+
+  private validateDuracionAnios(duracionAnios: number) {
+    if (!Number.isInteger(duracionAnios) || duracionAnios <= 0) {
+      throw new BadRequestException(
+        'duracion_anios debe ser un entero positivo',
+      );
     }
   }
 }

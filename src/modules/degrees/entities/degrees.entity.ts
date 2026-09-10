@@ -9,6 +9,9 @@ export class Degree {
     @Column()
     nombre: string;
 
+    @Column({ type: 'integer' })
+    duracion_anios: number;
+
     @Column({ default: true })
     estado: boolean;
 
