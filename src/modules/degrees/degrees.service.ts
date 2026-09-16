@@ -17,14 +17,12 @@ export class DegreeService {
   ) {}
 
   create(createDegreeDto: CreateDegreeDto) {
-    this.validateNombre(createDegreeDto.nombre);
-    this.validateDuracionAnios(createDegreeDto.duracion_anios);
-    this.validateEstado(createDegreeDto.estado);
+    this.validateName(createDegreeDto.name);
+    this.validateStatus(createDegreeDto.status);
 
     const degree = this.degreeRepository.create({
-      nombre: createDegreeDto.nombre.trim(),
-      duracion_anios: createDegreeDto.duracion_anios,
-      estado: createDegreeDto.estado ?? true,
+      name: createDegreeDto.name.trim(),
+      status: createDegreeDto.status ?? true,
     });
 
     return this.degreeRepository.save(degree);
@@ -47,19 +45,14 @@ export class DegreeService {
   async update(id: number, updateDegreeDto: UpdateDegreeDto) {
     const degree = await this.findOne(id);
 
-    if (updateDegreeDto.nombre !== undefined) {
-      this.validateNombre(updateDegreeDto.nombre);
-      degree.nombre = updateDegreeDto.nombre.trim();
+    if (updateDegreeDto.name !== undefined) {
+      this.validateName(updateDegreeDto.name);
+      degree.name = updateDegreeDto.name.trim();
     }
 
-    if (updateDegreeDto.duracion_anios !== undefined) {
-      this.validateDuracionAnios(updateDegreeDto.duracion_anios);
-      degree.duracion_anios = updateDegreeDto.duracion_anios;
-    }
-
-    if (updateDegreeDto.estado !== undefined) {
-      this.validateEstado(updateDegreeDto.estado);
-      degree.estado = updateDegreeDto.estado;
+    if (updateDegreeDto.status !== undefined) {
+      this.validateStatus(updateDegreeDto.status);
+      degree.status = updateDegreeDto.status;
     }
 
     return this.degreeRepository.save(degree);
@@ -71,23 +64,15 @@ export class DegreeService {
     return degree;
   }
 
-  private validateNombre(nombre: string) {
-    if (typeof nombre !== 'string' || nombre.trim().length === 0) {
-      throw new BadRequestException('nombre es obligatorio');
+  private validateName(name: string) {
+    if (typeof name !== 'string' || name.trim().length === 0) {
+      throw new BadRequestException('name is required');
     }
   }
 
-  private validateEstado(estado: boolean | undefined) {
-    if (estado !== undefined && typeof estado !== 'boolean') {
-      throw new BadRequestException('estado debe ser booleano');
-    }
-  }
-
-  private validateDuracionAnios(duracionAnios: number) {
-    if (!Number.isInteger(duracionAnios) || duracionAnios <= 0) {
-      throw new BadRequestException(
-        'duracion_anios debe ser un entero positivo',
-      );
+  private validateStatus(status: boolean | undefined) {
+    if (status !== undefined && typeof status !== 'boolean') {
+      throw new BadRequestException('status must be boolean');
     }
   }
 }

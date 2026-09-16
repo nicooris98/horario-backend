@@ -1,9 +1,10 @@
 export class CreateStudyPlanDto {
-    nombre: string;
-    carrera_id: number;
-    fecha_desde: string;
-    fecha_hasta?: string | null;
-    estado?: boolean;
-    resolucion_ministerial: string;
-    anio_implementacion: number;
+    name: string;
+    ministerialResolution: string;
+    degreeId: number;
+    durationYears: number;
+    validityYear: number;
+    startDate: string;
+    endDate?: string | null;
+    status?: boolean;
 }

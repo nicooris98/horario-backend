@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
-import { SubjectsModule } from './modules/subjects/subjects.module';
+import { SubjectsModule } from './modules/curriculum_subjects/subjects.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DegreeModule } from './modules/degrees/degrees.module';
 import { StudyPlanModule } from './modules/study_plans/study_plans.module';
-import { ShiftModule } from './modules/shifts/shifts.module';
-import { StudyPlanShiftsModule } from './modules/study_plan_shifts/study_plan_shifts.module';
+import { AcademicCyclesModule } from './modules/academic_cycles/academic_cycles.module';
+import { ClassPeriodsModule } from './modules/class_periods/class_periods.module';
+import { CourseSectionsModule } from './modules/course_sections/course_sections.module';
+import { CourseSectionAssignmentsModule } from './modules/course_section_assignments/course_section_assignments.module';
+import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
 
 @Module({
   imports: [
@@ -36,8 +39,11 @@ import { StudyPlanShiftsModule } from './modules/study_plan_shifts/study_plan_sh
     AuthModule,
     DegreeModule,
     StudyPlanModule,
-    ShiftModule,
-    StudyPlanShiftsModule
+    AcademicCyclesModule,
+    ClassPeriodsModule,
+    CourseSectionsModule,
+    CourseSectionAssignmentsModule,
+    EnrollmentsModule
   ],
   controllers: [],
   providers: [],

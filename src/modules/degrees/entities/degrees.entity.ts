@@ -6,15 +6,12 @@ export class Degree {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
-    nombre: string;
+    @Column({ name: 'nombre' })
+    name: string;
 
-    @Column({ type: 'integer' })
-    duracion_anios: number;
+    @Column({ name: 'estado', default: true })
+    status: boolean;
 
-    @Column({ default: true })
-    estado: boolean;
-
-    @OneToMany(() => StudyPlan, (studyPlan) => studyPlan.carrera)
-    planes_estudio: StudyPlan[];
+    @OneToMany(() => StudyPlan, (studyPlan) => studyPlan.degree)
+    studyPlans: StudyPlan[];
 }

@@ -1,7 +1,6 @@
 import {
     Column,
     Entity,
-    Index,
     JoinColumn,
     ManyToOne,
     OneToMany,
@@ -9,48 +8,45 @@ import {
     RelationId,
 } from 'typeorm';
 import { Degree } from '../../degrees/entities/degrees.entity';
-import { StudyPlanShift } from '../../study_plan_shifts/entities/study_plan_shift.entity';
-import { Subject } from '../../subjects/entities/subject.entity';
+import { Subject } from '../../curriculum_subjects/entities/subject.entity';
 
 @Entity('planes_estudio')
-@Index('UQ_planes_estudio_resolucion', ['resolucion_ministerial'], {
-    unique: true,
-})
 export class StudyPlan {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
-    resolucion_ministerial: string;
+    @Column({ name: 'nombre' })
+    name: string;
 
-    @Column()
-    anio_implementacion: number;
+    @Column({ name: 'resolucion_ministerial' })
+    ministerialResolution: string;
 
-    @Column()
-    nombre: string;
+    @Column({ name: 'duracion_anios', type: 'float' })
+    durationYears: number;
+
+    @Column({ name: 'anio_vigencia', type: 'integer' })
+    validityYear: number;
 
     @Column({ type: 'date' })
-    fecha_desde: string;
+    startDate: string;
 
     @Column({ type: 'date', nullable: true })
-    fecha_hasta: string | null;
+    endDate: string | null;
 
     @Column({ default: true })
-    estado: boolean;
+    status: boolean;
 
-    @ManyToOne(() => Degree, (degree) => degree.planes_estudio, {
+    @ManyToOne(() => Degree, (degree) => degree.studyPlans, {
         nullable: false,
         onDelete: 'RESTRICT',
     })
-    @JoinColumn({ name: 'carrera_id' })
-    carrera: Degree;
+    @JoinColumn({ name: 'id_carrera' })
+    degree: Degree;
 
-    @RelationId((studyPlan: StudyPlan) => studyPlan.carrera)
-    carrera_id: number;
+    @RelationId((studyPlan: StudyPlan) => studyPlan.degree)
+    degreeId: number;
 
-    @OneToMany(() => StudyPlanShift, (studyPlanShift) => studyPlanShift.plan_estudio)
-    planes_estudio: StudyPlanShift[];
+    @OneToMany(() => Subject, (subject) => subject.studyPlan)
+    curriculumSubjects: Subject[];
 
-    @OneToMany(() => Subject, (subject) => subject.plan_estudio)
-    asignaturas: Subject[];
 }

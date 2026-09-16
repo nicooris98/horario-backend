@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateStudyPlanDto } from './dto/create-study_plans.dto';
@@ -14,189 +9,62 @@ import { Degree } from '../degrees/entities/degrees.entity';
 @Injectable()
 export class StudyPlanService {
   constructor(
-    @InjectRepository(StudyPlan)
-    private studyPlanRepository: Repository<StudyPlan>,
-    @InjectRepository(Degree)
-    private degreeRepository: Repository<Degree>,
+    @InjectRepository(StudyPlan) private readonly studyPlanRepository: Repository<StudyPlan>,
+    @InjectRepository(Degree) private readonly degreeRepository: Repository<Degree>,
   ) {}
 
-  async create(createStudyPlanDto: CreateStudyPlanDto) {
-    this.validateNombre(createStudyPlanDto.nombre);
-    this.validateCarreraId(createStudyPlanDto.carrera_id);
-    this.validateFecha(createStudyPlanDto.fecha_desde, 'fecha_desde');
-    if (createStudyPlanDto.fecha_hasta !== undefined && createStudyPlanDto.fecha_hasta !== null) {
-      this.validateFecha(createStudyPlanDto.fecha_hasta, 'fecha_hasta');
-    }
-    this.validateFechaHasta(createStudyPlanDto.fecha_desde, createStudyPlanDto.fecha_hasta);
-    this.validateEstado(createStudyPlanDto.estado);
-    this.validateResolucionMinisterial(createStudyPlanDto.resolucion_ministerial);
-    this.validateAnioImplementacion(createStudyPlanDto.anio_implementacion);
-
-    const carrera = await this.findCarrera(createStudyPlanDto.carrera_id);
-    const resolucionMinisterial =
-      createStudyPlanDto.resolucion_ministerial.trim();
-    await this.ensureUniqueResolution(resolucionMinisterial);
-
-    const studyPlan = this.studyPlanRepository.create({
-      nombre: createStudyPlanDto.nombre.trim(),
-      carrera,
-      fecha_desde: createStudyPlanDto.fecha_desde,
-      fecha_hasta: createStudyPlanDto.fecha_hasta ?? null,
-      estado: createStudyPlanDto.estado ?? true,
-      resolucion_ministerial: resolucionMinisterial,
-      anio_implementacion: createStudyPlanDto.anio_implementacion,
-    });
-
-    return this.studyPlanRepository.save(studyPlan);
+  async create(dto: CreateStudyPlanDto) {
+    this.validate(dto);
+    const degree = await this.findDegree(dto.degreeId);
+    return this.studyPlanRepository.save(this.studyPlanRepository.create({
+      name: dto.name.trim(), durationYears: dto.durationYears, validityYear: dto.validityYear,
+      startDate: dto.startDate, endDate: dto.endDate ?? null, status: dto.status ?? true, degree,
+    }));
   }
 
-  async findAll() {
-    const plans = await this.studyPlanRepository.find({ relations: { carrera: true } });
-    if (!plans || plans.length === 0) {
-      throw new NotFoundException('No se encontraron planes de estudio');
-    }
-    return plans;
-  }
+  findAll() { return this.studyPlanRepository.find({ relations: { degree: true } }); }
 
   async findOne(id: number) {
-    const studyPlan = await this.studyPlanRepository.findOne({
-      where: { id },
-      relations: { carrera: true },
-    });
-    if (!studyPlan) {
-      throw new NotFoundException('Plan de estudio no encontrado');
-    }
-    return studyPlan;
+    const plan = await this.studyPlanRepository.findOne({ where: { id }, relations: { degree: true } });
+    if (!plan) throw new NotFoundException(`Study plan ${id} not found`);
+    return plan;
   }
 
-  async update(id: number, updateStudyPlanDto: UpdateStudyPlanDto) {
-    const studyPlan = await this.findOne(id);
-
-    if (updateStudyPlanDto.nombre !== undefined) {
-      this.validateNombre(updateStudyPlanDto.nombre);
-      studyPlan.nombre = updateStudyPlanDto.nombre.trim();
-    }
-
-    if (updateStudyPlanDto.carrera_id !== undefined) {
-      this.validateCarreraId(updateStudyPlanDto.carrera_id);
-      studyPlan.carrera = await this.findCarrera(updateStudyPlanDto.carrera_id);
-    }
-
-    const fechaDesde = updateStudyPlanDto.fecha_desde ?? studyPlan.fecha_desde;
-    const fechaHasta =
-      updateStudyPlanDto.fecha_hasta !== undefined
-        ? updateStudyPlanDto.fecha_hasta
-        : studyPlan.fecha_hasta;
-    if (updateStudyPlanDto.fecha_desde !== undefined) {
-      this.validateFecha(updateStudyPlanDto.fecha_desde, 'fecha_desde');
-      studyPlan.fecha_desde = updateStudyPlanDto.fecha_desde;
-    }
-    if (updateStudyPlanDto.fecha_hasta !== undefined) {
-      if (updateStudyPlanDto.fecha_hasta !== null) {
-        this.validateFecha(updateStudyPlanDto.fecha_hasta, 'fecha_hasta');
-      }
-      studyPlan.fecha_hasta = updateStudyPlanDto.fecha_hasta;
-    }
-    if (
-      updateStudyPlanDto.fecha_desde !== undefined ||
-      updateStudyPlanDto.fecha_hasta !== undefined
-    ) {
-      this.validateFechaHasta(fechaDesde, fechaHasta ?? undefined);
-    }
-
-    if (updateStudyPlanDto.estado !== undefined) {
-      this.validateEstado(updateStudyPlanDto.estado);
-      studyPlan.estado = updateStudyPlanDto.estado;
-    }
-
-    if (updateStudyPlanDto.resolucion_ministerial !== undefined) {
-      this.validateResolucionMinisterial(
-        updateStudyPlanDto.resolucion_ministerial,
-      );
-      const resolucionMinisterial =
-        updateStudyPlanDto.resolucion_ministerial.trim();
-      await this.ensureUniqueResolution(resolucionMinisterial, studyPlan.id);
-      studyPlan.resolucion_ministerial =
-        resolucionMinisterial;
-    }
-
-    if (updateStudyPlanDto.anio_implementacion !== undefined) {
-      this.validateAnioImplementacion(updateStudyPlanDto.anio_implementacion);
-      studyPlan.anio_implementacion = updateStudyPlanDto.anio_implementacion;
-    }
-
-    return this.studyPlanRepository.save(studyPlan);
+  async update(id: number, dto: UpdateStudyPlanDto) {
+    const plan = await this.findOne(id);
+    if (dto.name !== undefined) { this.validateName(dto.name); plan.name = dto.name.trim(); }
+    if (dto.degreeId !== undefined) plan.degree = await this.findDegree(dto.degreeId);
+    if (dto.durationYears !== undefined) plan.durationYears = this.validatePositiveNumber(dto.durationYears, 'durationYears');
+    if (dto.validityYear !== undefined) plan.validityYear = this.validatePositiveInteger(dto.validityYear, 'validityYear');
+    if (dto.startDate !== undefined) plan.startDate = dto.startDate;
+    if (dto.endDate !== undefined) plan.endDate = dto.endDate;
+    if (dto.status !== undefined) plan.status = dto.status;
+    this.validateDates(plan.startDate, plan.endDate);
+    return this.studyPlanRepository.save(plan);
   }
 
-  async remove(id: number) {
-    const studyPlan = await this.findOne(id);
-    return this.studyPlanRepository.remove(studyPlan);
+  async remove(id: number) { return this.studyPlanRepository.remove(await this.findOne(id)); }
+
+  private async findDegree(id: number) {
+    this.validatePositiveInteger(id, 'degreeId');
+    const degree = await this.degreeRepository.findOneBy({ id });
+    if (!degree) throw new NotFoundException(`Degree ${id} not found`);
+    return degree;
   }
 
-  private async findCarrera(carreraId: number) {
-    const carrera = await this.degreeRepository.findOneBy({ id: carreraId });
-    if (!carrera) {
-      throw new NotFoundException(`No existe la carrera con id ${carreraId}`);
-    }
-    return carrera;
+  private validate(dto: CreateStudyPlanDto) {
+    this.validateName(dto.name);
+    this.validatePositiveNumber(dto.durationYears, 'durationYears');
+    this.validatePositiveInteger(dto.validityYear, 'validityYear');
+    this.validateDates(dto.startDate, dto.endDate);
+    if (dto.status !== undefined && typeof dto.status !== 'boolean') throw new BadRequestException('status must be boolean');
   }
 
-  private async ensureUniqueResolution(
-    resolucionMinisterial: string,
-    excludedId?: number,
-  ) {
-    const existingPlan = await this.studyPlanRepository.findOneBy({
-      resolucion_ministerial: resolucionMinisterial,
-    });
-
-    if (existingPlan && existingPlan.id !== excludedId) {
-      throw new ConflictException(
-        `La resolución ministerial ${resolucionMinisterial} ya está registrada`,
-      );
-    }
-  }
-
-  private validateNombre(nombre: string) {
-    if (typeof nombre !== 'string' || !nombre.trim()) {
-      throw new BadRequestException('El nombre es obligatorio');
-    }
-  }
-
-  private validateCarreraId(carreraId: number) {
-    if (!Number.isInteger(carreraId) || carreraId <= 0) {
-      throw new BadRequestException('El carrera_id debe ser un entero positivo');
-    }
-  }
-
-  private validateFecha(fecha: string | undefined, campo: string) {
-    if (!fecha || Number.isNaN(Date.parse(fecha))) {
-      throw new BadRequestException(`El campo ${campo} debe ser una fecha valida`);
-    }
-  }
-
-  private validateFechaHasta(fechaDesde: string, fechaHasta?: string | null) {
-    if (fechaHasta && new Date(fechaHasta) < new Date(fechaDesde)) {
-      throw new BadRequestException(
-        'La fecha_hasta no puede ser anterior a la fecha_desde',
-      );
-    }
-  }
-
-  private validateEstado(estado: boolean | undefined) {
-    if (estado !== undefined && typeof estado !== 'boolean') {
-      throw new BadRequestException('El campo estado debe ser booleano');
-    }
-  }
-
-  private validateResolucionMinisterial(resolucionMinisterial: string) {
-    if (typeof resolucionMinisterial !== 'string' || !resolucionMinisterial.trim()) {
-      throw new BadRequestException('La resolucion_ministerial es obligatoria');
-    }
-  }
-
-  private validateAnioImplementacion(anioImplementacion: number) {
-    if (!Number.isInteger(anioImplementacion) || anioImplementacion <= 0) {
-      throw new BadRequestException('El anio_implementacion debe ser un entero positivo');
-    }
+  private validateName(name: string) { if (typeof name !== 'string' || !name.trim()) throw new BadRequestException('name is required'); }
+  private validatePositiveNumber(value: number, field: string) { if (!Number.isFinite(value) || value <= 0) throw new BadRequestException(`${field} must be positive`); return value; }
+  private validatePositiveInteger(value: number, field: string) { if (!Number.isInteger(value) || value <= 0) throw new BadRequestException(`${field} must be a positive integer`); return value; }
+  private validateDates(startDate: string, endDate?: string | null) {
+    if (!startDate || Number.isNaN(Date.parse(startDate))) throw new BadRequestException('startDate must be a valid date');
+    if (endDate && (Number.isNaN(Date.parse(endDate)) || new Date(endDate) < new Date(startDate))) throw new BadRequestException('endDate must be after startDate');
   }
 }
