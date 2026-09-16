@@ -6,7 +6,7 @@ export class AcademicCycle {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'integer' })
+  @Column({ name: 'anio', type: 'integer' })
   year: number;
 
   @Column({ name: 'fecha_inicio', type: 'date' })

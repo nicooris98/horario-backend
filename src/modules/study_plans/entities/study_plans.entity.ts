@@ -27,13 +27,13 @@ export class StudyPlan {
     @Column({ name: 'anio_vigencia', type: 'integer' })
     validityYear: number;
 
-    @Column({ type: 'date' })
+    @Column({ name: 'fecha_desde', type: 'date' })
     startDate: string;
 
-    @Column({ type: 'date', nullable: true })
+    @Column({ name: 'fecha_hasta', type: 'date', nullable: true })
     endDate: string | null;
 
-    @Column({ default: true })
+    @Column({ name: 'estado', default: true })
     status: boolean;
 
     @ManyToOne(() => Degree, (degree) => degree.studyPlans, {

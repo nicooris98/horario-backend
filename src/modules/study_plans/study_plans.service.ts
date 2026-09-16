@@ -17,7 +17,8 @@ export class StudyPlanService {
     this.validate(dto);
     const degree = await this.findDegree(dto.degreeId);
     return this.studyPlanRepository.save(this.studyPlanRepository.create({
-      name: dto.name.trim(), durationYears: dto.durationYears, validityYear: dto.validityYear,
+      name: dto.name.trim(), ministerialResolution: dto.ministerialResolution.trim(),
+      durationYears: dto.durationYears, validityYear: dto.validityYear,
       startDate: dto.startDate, endDate: dto.endDate ?? null, status: dto.status ?? true, degree,
     }));
   }
@@ -33,6 +34,10 @@ export class StudyPlanService {
   async update(id: number, dto: UpdateStudyPlanDto) {
     const plan = await this.findOne(id);
     if (dto.name !== undefined) { this.validateName(dto.name); plan.name = dto.name.trim(); }
+    if (dto.ministerialResolution !== undefined) {
+      this.validateMinisterialResolution(dto.ministerialResolution);
+      plan.ministerialResolution = dto.ministerialResolution.trim();
+    }
     if (dto.degreeId !== undefined) plan.degree = await this.findDegree(dto.degreeId);
     if (dto.durationYears !== undefined) plan.durationYears = this.validatePositiveNumber(dto.durationYears, 'durationYears');
     if (dto.validityYear !== undefined) plan.validityYear = this.validatePositiveInteger(dto.validityYear, 'validityYear');
@@ -54,6 +59,7 @@ export class StudyPlanService {
 
   private validate(dto: CreateStudyPlanDto) {
     this.validateName(dto.name);
+    this.validateMinisterialResolution(dto.ministerialResolution);
     this.validatePositiveNumber(dto.durationYears, 'durationYears');
     this.validatePositiveInteger(dto.validityYear, 'validityYear');
     this.validateDates(dto.startDate, dto.endDate);
@@ -61,6 +67,7 @@ export class StudyPlanService {
   }
 
   private validateName(name: string) { if (typeof name !== 'string' || !name.trim()) throw new BadRequestException('name is required'); }
+  private validateMinisterialResolution(value: string) { if (typeof value !== 'string' || !value.trim()) throw new BadRequestException('ministerialResolution is required'); }
   private validatePositiveNumber(value: number, field: string) { if (!Number.isFinite(value) || value <= 0) throw new BadRequestException(`${field} must be positive`); return value; }
   private validatePositiveInteger(value: number, field: string) { if (!Number.isInteger(value) || value <= 0) throw new BadRequestException(`${field} must be a positive integer`); return value; }
   private validateDates(startDate: string, endDate?: string | null) {
