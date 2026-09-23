@@ -3,6 +3,10 @@ import { SubjectsModule } from './modules/subjects/subjects.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { UsersModule } from './modules/users/users.module';
+import { RolesModule } from './modules/roles/roles.module';
+import { PerfilesModule } from './modules/perfiles/perfiles.module';
+import { PermisosModule } from './modules/permisos/permisos.module';
 
 @Module({
   imports: [
@@ -29,7 +33,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       }
     }),
     SubjectsModule,
-    AuthModule
+    AuthModule,
+    RolesModule,
+    UsersModule,
+    PerfilesModule,
+    PermisosModule,
   ],
   controllers: [],
   providers: [],
