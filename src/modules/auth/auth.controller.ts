@@ -5,8 +5,13 @@ import { AuthService } from './auth.service';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post()
-  create(@Body() createAuthDto) {
+  @Post('register')
+  register(@Body() createAuthDto) {
+    return this.authService.create(createAuthDto);
+  }
+
+  @Post('login')
+  login(@Body() createAuthDto) {
     return this.authService.create(createAuthDto);
   }
 }
