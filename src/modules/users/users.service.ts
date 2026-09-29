@@ -27,7 +27,7 @@ export class UsersService {
       apellido: createUserDto.apellido,
       email: createUserDto.email,
       password: createUserDto.password,
-      role,
+
     });
     return this.userRepository.save(user);
   }
@@ -46,6 +46,15 @@ export class UsersService {
     }
     return user;
   }
+  async findOneByEmail(email: string) {
+  return this.userRepository.findOne({
+    where:{email
+
+    }
+  })
+  }
+  
+
 
   async update(id: number, updateUserDto: UpdateUserDto) {
     const user = await this.findOne(id);
