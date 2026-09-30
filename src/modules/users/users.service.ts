@@ -16,30 +16,22 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto) {
-    const role = await this.roleRepository.findOne({
-      where: { id: createUserDto.idRole },
-    });
-    if (!role) {
-      throw new NotFoundException(`Role #${createUserDto.idRole} not found`);
-    }
     const user = this.userRepository.create({
-      nombre: createUserDto.nombre,
-      apellido: createUserDto.apellido,
+      first_name: createUserDto.first_name,
+      last_name: createUserDto.last_name,
       email: createUserDto.email,
       password: createUserDto.password,
-
     });
     return this.userRepository.save(user);
   }
 
   findAll() {
-    return this.userRepository.find({ relations: { role: true, userRoles: true } });
+    return this.userRepository.find({});
   }
 
   async findOne(id: number) {
     const user = await this.userRepository.findOne({
       where: { id },
-      relations: { role: true, userRoles: true },
     });
     if (!user) {
       throw new NotFoundException(`User #${id} not found`);
@@ -47,30 +39,20 @@ export class UsersService {
     return user;
   }
   async findOneByEmail(email: string) {
-  return this.userRepository.findOne({
-    where:{email
-
-    }
-  })
+    return this.userRepository.findOne({
+      where: { email },
+    });
   }
-  
-
 
   async update(id: number, updateUserDto: UpdateUserDto) {
     const user = await this.findOne(id);
-    if (updateUserDto.idRole !== undefined) {
-      const role = await this.roleRepository.findOne({
-        where: { id: updateUserDto.idRole },
-      });
-      if (!role) {
-        throw new NotFoundException(`Role #${updateUserDto.idRole} not found`);
-      }
-      user.role = role;
-    }
-    if (updateUserDto.nombre !== undefined) user.nombre = updateUserDto.nombre;
-    if (updateUserDto.apellido !== undefined) user.apellido = updateUserDto.apellido;
+    if (updateUserDto.first_name !== undefined)
+      user.first_name = updateUserDto.first_name;
+    if (updateUserDto.last_name !== undefined)
+      user.last_name = updateUserDto.last_name;
     if (updateUserDto.email !== undefined) user.email = updateUserDto.email;
-    if (updateUserDto.password !== undefined) user.password = updateUserDto.password;
+    if (updateUserDto.password !== undefined)
+      user.password = updateUserDto.password;
     return this.userRepository.save(user);
   }
 

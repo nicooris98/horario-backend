@@ -1,18 +1,16 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { AuditEntity } from '../../../common/entities/audit.entity';
-import { Role } from '../../roles/entities/role.entity';
-import { UserRole } from './user-role.entity';
 
 @Entity('users')
 export class User extends AuditEntity {
   @PrimaryGeneratedColumn({ name: 'id_usuario', type: 'integer' })
   id: number;
 
-  @Column({ name: 'nombre', type: 'varchar', length: 255 })
-  nombre: string;
+  @Column({ name: 'first_name', type: 'varchar', length: 255 })
+  first_name: string;
 
-  @Column({ name: 'apellido', type: 'varchar', length: 255 })
-  apellido: string;
+  @Column({ name: 'last_name', type: 'varchar', length: 255 })
+  last_name: string;
 
   @Column({ name: 'email', type: 'varchar', length: 255, unique: true })
   email: string;
@@ -20,10 +18,6 @@ export class User extends AuditEntity {
   @Column({ name: 'password', type: 'varchar', length: 255 })
   password: string;
 
-  @ManyToOne(() => Role, (role) => role.usuarios, { nullable: false })
-  @JoinColumn({ name: 'id_role' })
-  role: Role;
-
-  @OneToMany(() => UserRole, (ur) => ur.user)
-  userRoles: UserRole[];
+  @Column({ name: 'is_active', type: 'boolean', default: true })
+  isActive: boolean;
 }

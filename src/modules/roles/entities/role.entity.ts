@@ -1,5 +1,4 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { AuditEntity } from '../../../common/entities/audit.entity';
 
 @Entity('roles')
@@ -12,7 +11,4 @@ export class Role extends AuditEntity {
 
   @Column({ name: 'estado', type: 'boolean', default: true })
   estado: boolean;
-
-  @OneToMany(() => User, (user) => user.role)
-  usuarios: User[];
 }
