@@ -5,6 +5,9 @@ export class Subject {
     @PrimaryGeneratedColumn()
     id: number
 
-    @Column()
-    nombre: string
+    @Column({
+        name: 'nombre'
+    })
+    name: string
+    
 }
