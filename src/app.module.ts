@@ -1,8 +1,21 @@
 import { Module } from '@nestjs/common';
-import { SubjectsModule } from './modules/subjects/subjects.module';
-import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AsignaciondocenteModule } from './modules/asignaciondocente/asignaciondocente.module';
+import { CarreraModule } from './modules/carrera/carrera.module';
+import { CiclolectivoModule } from './modules/ciclolectivo/ciclolectivo.module';
+import { CuatrimestreModule } from './modules/cuatrimestre/cuatrimestre.module';
+import { CursodivisionModule } from './modules/cursodivision/cursodivision.module';
+import { DiaModule } from './modules/dia/dia.module';
+import { DocenteModule } from './modules/docente/docente.module';
+import { EspaciocurricularModule } from './modules/espaciocurricular/espaciocurricular.module';
+import { EspaciocurricularcursodivisionModule } from './modules/espaciocurricularcursodivision/espaciocurricularcursodivision.module';
+import { HoracatedraModule } from './modules/horacatedra/horacatedra.module';
+import { HorarioModule } from './modules/horario/horario.module';
+import { PlanestudioModule } from './modules/planestudio/planestudio.module';
+import { PlanestudiociclolectivoModule } from './modules/planestudiociclolectivo/planestudiociclolectivo.module';
+import { RegimenModule } from './modules/regimen/regimen.module';
+import { TipocargoModule } from './modules/tipocargo/tipocargo.module';
 
 @Module({
   imports: [
@@ -28,8 +41,21 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         }
       }
     }),
-    SubjectsModule,
-    AuthModule
+    AsignaciondocenteModule,
+    CarreraModule,
+    CiclolectivoModule,
+    CuatrimestreModule,
+    CursodivisionModule,
+    DiaModule,
+    DocenteModule,
+    EspaciocurricularModule,
+    EspaciocurricularcursodivisionModule,
+    HoracatedraModule,
+    HorarioModule,
+    PlanestudioModule,
+    PlanestudiociclolectivoModule,
+    RegimenModule,
+    TipocargoModule
   ],
   controllers: [],
   providers: [],
