@@ -5,8 +5,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
-import { PerfilesModule } from './modules/perfiles/perfiles.module';
-import { PermisosModule } from './modules/permisos/permisos.module';
 
 @Module({
   imports: [
@@ -28,7 +26,7 @@ import { PermisosModule } from './modules/permisos/permisos.module';
           entities: [
           __dirname + '/**/*.entity{.ts,.js}',
       ],
-          synchronize: true
+          synchronize: false
         }
       }
     }),
@@ -36,8 +34,6 @@ import { PermisosModule } from './modules/permisos/permisos.module';
     AuthModule,
     RolesModule,
     UsersModule,
-    PerfilesModule,
-    PermisosModule,
   ],
   controllers: [],
   providers: [],
