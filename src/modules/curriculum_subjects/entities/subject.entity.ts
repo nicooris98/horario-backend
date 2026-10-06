@@ -1,43 +1,51 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, RelationId } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { StudyPlan } from '../../study_plans/entities/study_plans.entity';
+import { Regime } from '../../regimes/entities/regime.entity';
 
-@Entity('espacios_curriculares')
-@Index('UQ_espacios_curriculares_plan_nombre', ['studyPlan', 'name'], {
-    unique: true,
+@Entity('espacio_curricular')
+@Index('UQ_espacio_curricular_plan_nombre', ['studyPlan', 'name'], {
+  unique: true,
 })
 export class Subject {
-    @PrimaryGeneratedColumn()
-    id: number
+  @PrimaryGeneratedColumn({ name: 'id_espacio_curricular' })
+  id: number;
 
-    @Column({ name: 'nombre' })
-    name: string
+  @ManyToOne(() => StudyPlan, (studyPlan) => studyPlan.curriculumSubjects, {
+    nullable: false,
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'id_plan_estudio' })
+  studyPlan: StudyPlan;
 
-    @Column({ name: 'anio_cursado', type: 'integer' })
-    year: number
+  @ManyToOne(() => Regime, (regime) => regime.subjects, {
+    nullable: false,
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'id_regimen' })
+  regime: Regime;
 
-    @Column({ name: 'regimen' })
-    regime: string
+  @Column({ name: 'nombre' })
+  name: string;
 
-    @Column({ name: 'horas_semanales', type: 'integer' })
-    weeklyHours: number
+  @Column({ name: 'anio_cursado', type: 'integer' })
+  year: number;
 
-    @Column({ name: 'permite_multiples_docentes' })
-    allowsMultipleTeachers: boolean
+  @Column({ name: 'horas_semanales', type: 'integer' })
+  weeklyHours: number;
 
-    @Column({ name: 'max_docentes', type: 'integer', nullable: true })
-    maxTeachers: number | null
+  @Column({ name: 'permite_multiple_docente' })
+  allowsMultipleTeachers: boolean;
 
-    @Column({ name: 'estado', default: true })
-    status: boolean
+  @Column({ name: 'max_docentes', type: 'integer', nullable: true })
+  maxTeachers: number | null;
 
-
-    @ManyToOne(() => StudyPlan, (studyPlan) => studyPlan.curriculumSubjects, {
-        nullable: false,
-        onDelete: 'RESTRICT',
-    })
-    @JoinColumn({ name: 'id_plan' })
-    studyPlan: StudyPlan;
-
-    @RelationId((subject: Subject) => subject.studyPlan)
-    studyPlanId: number;
+  @Column({ name: 'estado', default: 'ACTIVO' })
+  status: string;
 }

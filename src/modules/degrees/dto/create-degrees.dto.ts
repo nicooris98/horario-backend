@@ -1,4 +1,3 @@
 export class CreateDegreeDto {
-	name: string;
-	status?: boolean;
+  name: string;
 }

@@ -1,50 +1,111 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import {
+  findRef,
+  optionalStatus,
+  pick,
+  requireInt,
+  requireText,
+} from '../../common/helpers';
+import { Regime } from '../regimes/entities/regime.entity';
+import { StudyPlan } from '../study_plans/entities/study_plans.entity';
 import { CreateAsignaturaDto } from './dto/create-asignatura.dto';
 import { UpdateAsignaturaDto } from './dto/update-asignatura.dto';
 import { Subject } from './entities/subject.entity';
-import { StudyPlan } from '../study_plans/entities/study_plans.entity';
+
+const FIELDS = [
+  'name',
+  'year',
+  'weeklyHours',
+  'allowsMultipleTeachers',
+  'maxTeachers',
+  'status',
+] as const;
+const RELATIONS = { studyPlan: true, regime: true };
 
 @Injectable()
 export class SubjectsService {
-  constructor(@InjectRepository(Subject) private readonly subjectRepository: Repository<Subject>, @InjectRepository(StudyPlan) private readonly studyPlanRepository: Repository<StudyPlan>) {}
+  constructor(
+    @InjectRepository(Subject)
+    private readonly repository: Repository<Subject>,
+  ) {}
 
   async create(dto: CreateAsignaturaDto) {
-    this.validate(dto);
-    const studyPlan = await this.findStudyPlan(dto.studyPlanId);
-    return this.subjectRepository.save(this.subjectRepository.create({
-      name: dto.name.trim(), year: dto.year, regime: dto.regime, weeklyHours: dto.weeklyHours,
-      allowsMultipleTeachers: dto.allowsMultipleTeachers, maxTeachers: dto.maxTeachers ?? null,
-      status: dto.status ?? true, studyPlan,
-    }));
+    this.validate({ ...dto, maxTeachers: dto.maxTeachers ?? null });
+    const manager = this.repository.manager;
+    return this.repository.save(
+      this.repository.create({
+        ...pick(dto, [...FIELDS]),
+        name: dto.name.trim(),
+        maxTeachers: dto.maxTeachers ?? null,
+        studyPlan: await findRef(
+          manager,
+          StudyPlan,
+          dto.studyPlanId,
+          'Study plan',
+        ),
+        regime: await findRef(manager, Regime, dto.regimeId, 'Regime'),
+      }),
+    );
   }
 
-  findAll() { return this.subjectRepository.find({ relations: { studyPlan: true }, order: { id: 'ASC' } }); }
+  findAll() {
+    return this.repository.find({ relations: RELATIONS, order: { id: 'ASC' } });
+  }
 
   async findOne(id: number) {
-    const subject = await this.subjectRepository.findOne({ where: { id }, relations: { studyPlan: true } });
-    if (!subject) throw new NotFoundException(`Curriculum subject ${id} not found`);
+    const subject = await this.repository.findOne({
+      where: { id },
+      relations: RELATIONS,
+    });
+    if (!subject) {
+      throw new NotFoundException(`Curriculum subject ${id} not found`);
+    }
     return subject;
   }
 
   async update(id: number, dto: UpdateAsignaturaDto) {
     const subject = await this.findOne(id);
-    if (dto.name !== undefined) { this.validateName(dto.name); subject.name = dto.name.trim(); }
-    if (dto.year !== undefined) subject.year = this.validateInteger(dto.year, 'year');
-    if (dto.regime !== undefined) subject.regime = dto.regime;
-    if (dto.weeklyHours !== undefined) subject.weeklyHours = this.validatePositive(dto.weeklyHours, 'weeklyHours');
-    if (dto.allowsMultipleTeachers !== undefined) subject.allowsMultipleTeachers = dto.allowsMultipleTeachers;
-    if (dto.maxTeachers !== undefined) subject.maxTeachers = dto.maxTeachers;
-    if (dto.status !== undefined) subject.status = dto.status;
-    if (dto.studyPlanId !== undefined) subject.studyPlan = await this.findStudyPlan(dto.studyPlanId);
-    return this.subjectRepository.save(subject);
+    const manager = this.repository.manager;
+    if (dto.studyPlanId !== undefined) {
+      subject.studyPlan = await findRef(
+        manager,
+        StudyPlan,
+        dto.studyPlanId,
+        'Study plan',
+      );
+    }
+    if (dto.regimeId !== undefined) {
+      subject.regime = await findRef(manager, Regime, dto.regimeId, 'Regime');
+    }
+    Object.assign(subject, pick(dto, [...FIELDS]));
+    this.validate(subject);
+    subject.name = subject.name.trim();
+    return this.repository.save(subject);
   }
 
-  async remove(id: number) { return this.subjectRepository.remove(await this.findOne(id)); }
-  private async findStudyPlan(id: number) { const plan = await this.studyPlanRepository.findOneBy({ id }); if (!plan) throw new NotFoundException(`Study plan ${id} not found`); return plan; }
-  private validate(dto: CreateAsignaturaDto) { this.validateName(dto.name); this.validateInteger(dto.year, 'year'); this.validatePositive(dto.weeklyHours, 'weeklyHours'); if (typeof dto.allowsMultipleTeachers !== 'boolean') throw new BadRequestException('allowsMultipleTeachers must be boolean'); }
-  private validateName(name: string) { if (typeof name !== 'string' || !name.trim()) throw new BadRequestException('name is required'); }
-  private validateInteger(value: number, field: string) { if (!Number.isInteger(value) || value <= 0) throw new BadRequestException(`${field} must be a positive integer`); return value; }
-  private validatePositive(value: number, field: string) { if (!Number.isFinite(value) || value <= 0) throw new BadRequestException(`${field} must be positive`); return value; }
+  async remove(id: number) {
+    return this.repository.remove(await this.findOne(id));
+  }
+
+  private validate(
+    s: Pick<
+      Subject,
+      'name' | 'year' | 'weeklyHours' | 'allowsMultipleTeachers'
+    > & { maxTeachers?: number | null; status?: string },
+  ) {
+    requireText(s.name, 'name');
+    requireInt(s.year, 'year');
+    requireInt(s.weeklyHours, 'weeklyHours');
+    if (typeof s.allowsMultipleTeachers !== 'boolean') {
+      throw new BadRequestException('allowsMultipleTeachers must be boolean');
+    }
+    if (s.maxTeachers != null) requireInt(s.maxTeachers, 'maxTeachers');
+    optionalStatus(s.status);
+  }
 }

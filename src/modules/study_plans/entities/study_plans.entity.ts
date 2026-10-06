@@ -1,52 +1,54 @@
 import {
-    Column,
-    Entity,
-    JoinColumn,
-    ManyToOne,
-    OneToMany,
-    PrimaryGeneratedColumn,
-    RelationId,
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Degree } from '../../degrees/entities/degrees.entity';
 import { Subject } from '../../curriculum_subjects/entities/subject.entity';
+import { StudyPlanAcademicCycle } from '../../study_plan_academic_cycles/entities/study_plan_academic_cycle.entity';
 
-@Entity('planes_estudio')
+@Entity('plan_estudio')
 export class StudyPlan {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn({ name: 'id_plan_estudio' })
+  id: number;
 
-    @Column({ name: 'nombre' })
-    name: string;
+  @ManyToOne(() => Degree, (degree) => degree.studyPlans, {
+    nullable: false,
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'id_carrera' })
+  degree: Degree;
 
-    @Column({ name: 'resolucion_ministerial' })
-    ministerialResolution: string;
+  @Column({ name: 'nombre' })
+  name: string;
 
-    @Column({ name: 'duracion_anios', type: 'float' })
-    durationYears: number;
+  @Column({ name: 'anio_vigencia', type: 'integer' })
+  validityYear: number;
 
-    @Column({ name: 'anio_vigencia', type: 'integer' })
-    validityYear: number;
+  @Column({ name: 'fecha_desde', type: 'date' })
+  startDate: string;
 
-    @Column({ name: 'fecha_desde', type: 'date' })
-    startDate: string;
+  @Column({ name: 'fecha_hasta', type: 'date', nullable: true })
+  endDate: string | null;
 
-    @Column({ name: 'fecha_hasta', type: 'date', nullable: true })
-    endDate: string | null;
+  @Column({ name: 'estado', default: 'ACTIVO' })
+  status: string;
 
-    @Column({ name: 'estado', default: true })
-    status: boolean;
+  @Column({
+    name: 'cantidad_anios',
+    type: 'decimal',
+    precision: 4,
+    scale: 2,
+    transformer: { to: (v: number) => v, from: (v: string) => Number(v) },
+  })
+  durationYears: number;
 
-    @ManyToOne(() => Degree, (degree) => degree.studyPlans, {
-        nullable: false,
-        onDelete: 'RESTRICT',
-    })
-    @JoinColumn({ name: 'id_carrera' })
-    degree: Degree;
+  @OneToMany(() => Subject, (subject) => subject.studyPlan)
+  curriculumSubjects: Subject[];
 
-    @RelationId((studyPlan: StudyPlan) => studyPlan.degree)
-    degreeId: number;
-
-    @OneToMany(() => Subject, (subject) => subject.studyPlan)
-    curriculumSubjects: Subject[];
-
+  @OneToMany(() => StudyPlanAcademicCycle, (spc) => spc.studyPlan)
+  studyPlanAcademicCycles: StudyPlanAcademicCycle[];
 }

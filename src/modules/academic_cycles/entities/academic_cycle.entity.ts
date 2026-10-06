@@ -1,9 +1,9 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { CourseSection } from '../../course_sections/entities/course_section.entity';
+import { StudyPlanAcademicCycle } from '../../study_plan_academic_cycles/entities/study_plan_academic_cycle.entity';
 
-@Entity('ciclos_lectivos')
+@Entity('ciclo_lectivo')
 export class AcademicCycle {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'id_ciclo_lectivo' })
   id: number;
 
   @Column({ name: 'anio', type: 'integer' })
@@ -15,9 +15,9 @@ export class AcademicCycle {
   @Column({ name: 'fecha_fin', type: 'date' })
   endDate: string;
 
-  @Column({ name: 'estado', default: true })
-  status: boolean;
+  @Column({ name: 'estado', default: 'ACTIVO' })
+  status: string;
 
-  @OneToMany(() => CourseSection, (courseSection) => courseSection.academicCycle)
-  courseSections: CourseSection[];
+  @OneToMany(() => StudyPlanAcademicCycle, (spc) => spc.academicCycle)
+  studyPlanAcademicCycles: StudyPlanAcademicCycle[];
 }
