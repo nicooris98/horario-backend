@@ -14,8 +14,6 @@ import { StudyPlanAcademicCyclesModule } from './modules/study_plan_academic_cyc
 import { CourseSectionsModule } from './modules/course_sections/course_sections.module';
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
-import { PerfilesModule } from './modules/perfiles/perfiles.module';
-import { PermisosModule } from './modules/permisos/permisos.module';
 
 @Module({
   imports: [
@@ -34,10 +32,12 @@ import { PermisosModule } from './modules/permisos/permisos.module';
           username: configService.get<string>('DB_USER'),
           password: configService.get<string>('DB_PASS'),
           port: configService.get<number>('DB_PORT'),
-          entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: true,
-        };
-      },
+          entities: [
+          __dirname + '/**/*.entity{.ts,.js}',
+      ],
+          synchronize: false
+        }
+      }
     }),
     SubjectsModule,
     AuthModule,
@@ -52,8 +52,6 @@ import { PermisosModule } from './modules/permisos/permisos.module';
     CourseSectionsModule,
     RolesModule,
     UsersModule,
-    PerfilesModule,
-    PermisosModule,
   ],
   controllers: [],
   providers: [],

@@ -1,4 +1,5 @@
 export class CreateRoleDto {
-  nombre: string;
-  estado?: boolean;
+  name: string;
+  description?: string;
+  isActive?: boolean;
 }
