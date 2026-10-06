@@ -12,6 +12,10 @@ import { ClassHoursModule } from './modules/class_hours/class_hours.module';
 import { SemestersModule } from './modules/semesters/semesters.module';
 import { StudyPlanAcademicCyclesModule } from './modules/study_plan_academic_cycles/study_plan_academic_cycles.module';
 import { CourseSectionsModule } from './modules/course_sections/course_sections.module';
+import { UsersModule } from './modules/users/users.module';
+import { RolesModule } from './modules/roles/roles.module';
+import { PerfilesModule } from './modules/perfiles/perfiles.module';
+import { PermisosModule } from './modules/permisos/permisos.module';
 
 @Module({
   imports: [
@@ -46,6 +50,10 @@ import { CourseSectionsModule } from './modules/course_sections/course_sections.
     SemestersModule,
     StudyPlanAcademicCyclesModule,
     CourseSectionsModule,
+    RolesModule,
+    UsersModule,
+    PerfilesModule,
+    PermisosModule,
   ],
   controllers: [],
   providers: [],
