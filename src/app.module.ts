@@ -24,7 +24,6 @@ import { RolesModule } from './modules/roles/roles.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        console.log('DB_HOST', configService.get<string>('DB_NAME'));
         return {
           type: 'postgres',
           host: configService.get<string>('DB_HOST'),
@@ -32,12 +31,10 @@ import { RolesModule } from './modules/roles/roles.module';
           username: configService.get<string>('DB_USER'),
           password: configService.get<string>('DB_PASS'),
           port: configService.get<number>('DB_PORT'),
-          entities: [
-          __dirname + '/**/*.entity{.ts,.js}',
-      ],
-          synchronize: false
-        }
-      }
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: false,
+        };
+      },
     }),
     SubjectsModule,
     AuthModule,
