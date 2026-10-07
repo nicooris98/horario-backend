@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { TeachersService } from './teachers.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
@@ -22,13 +23,18 @@ export class TeachersController {
   }
 
   @Get()
-  findAll() {
-    return this.teachersService.findAll();
+  findAll(@Query('dni') dni?: string, @Query('lastName') lastName?: string) {
+    return this.teachersService.search(dni, lastName);
   }
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.teachersService.findOne(id);
+  }
+
+  @Patch(':id/deactivate')
+  deactivate(@Param('id', ParseIntPipe) id: number) {
+    return this.teachersService.deactivate(id);
   }
 
   @Patch(':id')
