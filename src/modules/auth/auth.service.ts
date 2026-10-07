@@ -1,11 +1,11 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-
 import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -15,50 +15,40 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const existUser = await this.userService.findOneByEmail(registerDto.email);
-
-    if (existUser) {
-      throw new Error('Ya existe el usuario');
-    }
-
-    const hashPassword = await bcrypt.hash(registerDto.password, 10);
-
-    await this.userService.create({
-      first_name: registerDto.first_name,
-      last_name: registerDto.last_name,
-      email: registerDto.email,
-      password: hashPassword,
-    });
-
-    return {
-      ok: true,
-      message: 'Usuario creado correctamente',
-    };
+    return this.userService.create(registerDto);
   }
 
   async login(loginDto: LoginDto) {
-    const user = await this.userService.findOneByEmail(loginDto.email);
+    const user = await this.userService.findOneByEmail(loginDto.email, true);
 
-    if (!user) {
-      throw new UnauthorizedException('Usuario no encontrado');
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     const isPasswordValid = await bcrypt.compare(
       loginDto.password,
       user.password,
     );
+
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Credenciales invalidas');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    const jwtPayload: JwtPayload = {
-      id: user.id,
+    return {
+      accessToken: this.signToken(user),
+      user,
+    };
+  }
+
+  private signToken(user: User) {
+    const payload: JwtPayload = {
+      sub: user.id,
       email: user.email,
-      isActive: user.isActive,
+      roles: (user.roles ?? [])
+        .filter((role) => role.isActive)
+        .map((role) => role.name),
     };
 
-    return {
-      token: this.jwtService.sign(jwtPayload),
-    };
+    return this.jwtService.sign(payload);
   }
 }
