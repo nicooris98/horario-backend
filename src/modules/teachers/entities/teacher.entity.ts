@@ -23,6 +23,6 @@ export class Teacher {
   @Column({ name: 'legajo', type: 'integer', nullable: true })
   fileNumber: number | null;
 
-  @Column({ name: 'estado', default: 'ACTIVO' })
+  @Column({ name: 'estado' })
   status: string;
 }

@@ -30,8 +30,13 @@ export class TeachersService {
 
   create(dto: CreateTeacherDto) {
     this.validate(dto);
+    // La columna estado del script no tiene DEFAULT y synchronize está en
+    // false, así que el default de la entidad no llega a la base.
     return this.repository.save(
-      this.repository.create(this.normalize(pick(dto, [...FIELDS]))),
+      this.repository.create({
+        ...this.normalize(pick(dto, [...FIELDS])),
+        status: dto.status ?? 'ACTIVO',
+      }),
     );
   }
 
