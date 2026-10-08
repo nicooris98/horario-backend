@@ -14,6 +14,7 @@ import { StudyPlanAcademicCyclesModule } from './modules/study_plan_academic_cyc
 import { CourseSectionsModule } from './modules/course_sections/course_sections.module';
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { DocentesModule } from './modules/docentes/docentes.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { RolesModule } from './modules/roles/roles.module';
     CourseSectionsModule,
     RolesModule,
     UsersModule,
+    DocentesModule,
   ],
   controllers: [],
   providers: [],
