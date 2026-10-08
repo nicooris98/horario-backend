@@ -1,5 +1,5 @@
 export interface JwtPayload {
-  id: number;
+  sub: number;
   email: string;
-  isActive: boolean;
+  roles: string[];
 }

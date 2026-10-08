@@ -14,6 +14,8 @@ import { StudyPlanAcademicCyclesModule } from './modules/study_plan_academic_cyc
 import { CourseSectionsModule } from './modules/course_sections/course_sections.module';
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
+import { SeederModule } from './modules/seeder/seeder.module';
 
 @Module({
   imports: [
@@ -51,7 +53,9 @@ import { RolesModule } from './modules/roles/roles.module';
     StudyPlanAcademicCyclesModule,
     CourseSectionsModule,
     RolesModule,
+    PermissionsModule,
     UsersModule,
+    SeederModule,
   ],
   controllers: [],
   providers: [],
