@@ -1,5 +1,5 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { StudyPlanAcademicCycle } from '../../study_plan_academic_cycles/entities/study_plan_academic_cycle.entity';
+import { StudyPlanAcademicCycle } from '../../study-plan-academic-cycles/entities/study-plan-academic-cycle.entity';
 
 @Entity('turno')
 export class Shift {
