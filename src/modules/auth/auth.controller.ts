@@ -1,38 +1,34 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { User } from '../users/entities/user.entity';
+import { CreateAuthDto } from './dto/create-auth.dto';
+import { UpdateAuthDto } from './dto/update-auth.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('register')
-  @HttpCode(HttpStatus.CREATED)
-  register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  @Post()
+  create(@Body() createAuthDto: CreateAuthDto) {
+    return this.authService.create(createAuthDto);
   }
 
-  @Post('login')
-  @HttpCode(HttpStatus.OK)
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  @Get()
+  findAll() {
+    return this.authService.findAll();
   }
 
-  @Get('me')
-  @UseGuards(JwtAuthGuard)
-  me(@CurrentUser() user: User) {
-    return user;
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.authService.findOne(+id);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
+    return this.authService.update(+id, updateAuthDto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.authService.remove(+id);
   }
 }
