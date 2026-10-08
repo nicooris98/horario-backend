@@ -6,25 +6,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, ILike, QueryFailedError, Repository } from 'typeorm';
+import { FOREIGN_KEY_VIOLATION } from '../../common/constants/database.constants';
 import { pick, requireInt, requireText } from '../../common/helpers';
+import { FIELDS, TEACHER_STATUSES } from './constants/teachers.constants';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
 import { Teacher } from './entities/teacher.entity';
-
-const FIELDS = [
-  'dni',
-  'firstName',
-  'lastName',
-  'phone',
-  'email',
-  'fileNumber',
-  'status',
-] as const;
-
-export const TEACHER_STATUSES = ['ACTIVO', 'INACTIVO'] as const;
-
-// Código de Postgres para violación de clave foránea.
-const FOREIGN_KEY_VIOLATION = '23503';
 
 @Injectable()
 export class TeachersService {
