@@ -16,6 +16,7 @@ import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { TeachersModule } from './modules/teachers/teachers.module';
 import { PositionTypesModule } from './modules/position-types/position-types.module';
+import { TeacherAssignmentsModule } from './modules/teacher-assignments/teacher-assignments.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { PositionTypesModule } from './modules/position-types/position-types.mod
     UsersModule,
     TeachersModule,
     PositionTypesModule,
+    TeacherAssignmentsModule,
   ],
   controllers: [],
   providers: [],
