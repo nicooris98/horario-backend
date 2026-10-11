@@ -5,9 +5,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, ILike, QueryFailedError, Repository } from 'typeorm';
+import {
+  FindOptionsWhere,
+  ILike,
+  In,
+  QueryFailedError,
+  Repository,
+} from 'typeorm';
 import { FOREIGN_KEY_VIOLATION } from '../../common/constants/database.constants';
 import { pick, requireInt, requireText } from '../../common/helpers';
+import { TeacherAssignment } from '../teacher-assignments/entities/teacher-assignment.entity';
+import { activeOn } from '../teacher-assignments/teacher-assignments.helpers';
 import { FIELDS, TEACHER_STATUSES } from './constants/teachers.constants';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
@@ -18,6 +26,8 @@ export class TeachersService {
   constructor(
     @InjectRepository(Teacher)
     private readonly repository: Repository<Teacher>,
+    @InjectRepository(TeacherAssignment)
+    private readonly assignments: Repository<TeacherAssignment>,
   ) {}
 
   async create(dto: CreateTeacherDto) {
@@ -53,7 +63,26 @@ export class TeachersService {
         `No se encontraron docentes con ${criteria.join(' y ')}`,
       );
     }
-    return found;
+    return this.withCurrentAssignments(found);
+  }
+
+  // HU-M2-02: la búsqueda muestra también los cargos vigentes de cada docente.
+  private async withCurrentAssignments(teachers: Teacher[]) {
+    const current = await this.assignments.find({
+      where: activeOn({ teacher: { id: In(teachers.map((t) => t.id)) } }),
+      relations: {
+        teacher: true,
+        positionType: true,
+        courseSectionSubject: { subject: true, courseSection: true },
+      },
+      order: { startDate: 'ASC' },
+    });
+    return teachers.map((teacher) => ({
+      ...teacher,
+      currentAssignments: current
+        .filter((a) => a.teacher.id === teacher.id)
+        .map((a) => ({ ...a, teacher: undefined })),
+    }));
   }
 
   async findOne(id: number) {
