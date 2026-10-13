@@ -26,6 +26,13 @@ export class Permission extends AuditEntity {
   })
   code: string; // ej: 'roles.create', 'users.read'
 
+  @Column({ 
+    name: 'is_active',
+    type: 'boolean', 
+    default: true, 
+  })
+  isActive: boolean;
+
   @ManyToMany(() => Role, (role) => role.permissions)
   roles: Role[];
 }

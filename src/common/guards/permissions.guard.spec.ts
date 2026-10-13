@@ -16,7 +16,7 @@ const mockContext = (user: unknown): ExecutionContext =>
 
 const role = (isActive: boolean, codes: string[]) => ({
   isActive,
-  permissions: codes.map((code) => ({ code })),
+  permissions: codes.map((code) => ({ code, isActive: true })),
 });
 
 describe('PermissionsGuard', () => {

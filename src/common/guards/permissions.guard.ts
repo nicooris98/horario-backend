@@ -46,7 +46,9 @@ export class PermissionsGuard implements CanActivate {
     // Solo cuentan los permisos de los roles ACTIVOS
     const userPermissions = (user?.roles ?? [])
       .filter((role) => role.isActive)
-      .flatMap((role) => (role.permissions ?? []).map((p) => p.code));
+      .flatMap((role) => (role.permissions ?? [])
+      .filter((permission) => permission.isActive)
+      .map((p) => p.code));
 
     // Hay que tener TODOS los permisos pedidos
     const hasAll = requiredPermissions.every((permission) =>

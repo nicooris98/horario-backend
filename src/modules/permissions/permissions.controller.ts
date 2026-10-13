@@ -38,4 +38,18 @@ export class PermissionsController {
   update(@Param('id', ParseIntPipe) id: number, @Body() updatePermissionDto: UpdatePermissionDto) {
     return this.permissionsService.update(id, updatePermissionDto);
   }
+  
+  @Patch(':id/activate')
+  @Roles('admin')
+  @Permissions('permissions.update')
+  activate(@Param('id', ParseIntPipe) id: number) {
+    return this.permissionsService.setActive(id, true);
+  }
+
+  @Patch(':id/deactivate')
+  @Roles('admin')
+  @Permissions('permissions.update')
+  deactivate(@Param('id', ParseIntPipe) id: number) {
+    return this.permissionsService.setActive(id, false);
+  }
 }

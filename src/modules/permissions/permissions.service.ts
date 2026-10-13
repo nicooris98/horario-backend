@@ -34,4 +34,10 @@ export class PermissionsService {
     Object.assign(permission, updatePermissionDto);
     return this.permissionRepository.save(permission);
   }
+
+  async setActive(id: number, isActive: boolean) {
+    const permission = await this.findOne(id);
+    permission.isActive = isActive;
+    return this.permissionRepository.save(permission);
+  }
 }

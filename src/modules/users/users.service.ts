@@ -155,6 +155,12 @@ export class UsersService {
       throw new NotFoundException('Uno o más roles no existen');
     }
 
+    const inactivos = roles.filter((role) => !role.isActive);
+    if (inactivos.length > 0) {
+      const nombres = inactivos.map((role) => role.name).join(', ');
+      throw new BadRequestException(`Roles inactivos: ${nombres}`);
+}
+
     user.roles = roles;
     await this.userRepository.save(user);
     return this.findOne(userId);
