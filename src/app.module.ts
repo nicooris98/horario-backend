@@ -14,6 +14,9 @@ import { StudyPlanAcademicCyclesModule } from './modules/study_plan_academic_cyc
 import { CourseSectionsModule } from './modules/course_sections/course_sections.module';
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { TeachersModule } from './modules/teachers/teachers.module';
+import { PositionTypesModule } from './modules/position-types/position-types.module';
+import { TeacherAssignmentsModule } from './modules/teacher-assignments/teacher-assignments.module';
 import { SeederModule } from './modules/seeder/seeder.module';
 
 @Module({
@@ -25,7 +28,6 @@ import { SeederModule } from './modules/seeder/seeder.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        console.log('DB_HOST', configService.get<string>('DB_NAME'));
         return {
           type: 'postgres',
           host: configService.get<string>('DB_HOST'),
@@ -33,12 +35,10 @@ import { SeederModule } from './modules/seeder/seeder.module';
           username: configService.get<string>('DB_USER'),
           password: configService.get<string>('DB_PASS'),
           port: configService.get<number>('DB_PORT'),
-          entities: [
-          __dirname + '/**/*.entity{.ts,.js}',
-      ],
-          synchronize: false
-        }
-      }
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: false,
+        };
+      },
     }),
     SubjectsModule,
     AuthModule,
@@ -53,6 +53,9 @@ import { SeederModule } from './modules/seeder/seeder.module';
     CourseSectionsModule,
     RolesModule,
     UsersModule,
+    TeachersModule,
+    PositionTypesModule,
+    TeacherAssignmentsModule,
     SeederModule,
   ],
   controllers: [],
