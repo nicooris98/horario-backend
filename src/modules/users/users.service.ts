@@ -44,18 +44,42 @@ export class UsersService {
   }
 
   async createFromDashboard(dto: CreateDashboardUserDto) {
-    const user = await this.create(dto);
+    const existingUser = await this.findOneByEmail(dto.email);
 
-    if (dto.isActive === false) {
-      user.isActive = false;
-      await this.userRepository.save(user);
+    if (existingUser) {
+      throw new ConflictException('Ya existe un usuario con ese email');
     }
 
-    if (dto.role_ids) {
-      return this.setRoles(user.id, dto.role_ids);
-    }
+    // Validar roles antes de cualquier escritura
+    const roles = dto.role_ids
+      ? await this.resolveActiveRoles(dto.role_ids)
+      : undefined;
 
-    return this.findOne(user.id);
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    const savedId = await this.userRepository.manager.transaction(
+      async (manager) => {
+        const user = manager.create(User, {
+          firstName: dto.first_name,
+          lastName: dto.last_name,
+          email: dto.email,
+          password: hashedPassword,
+        });
+
+        if (dto.isActive === false) {
+          user.isActive = false;
+        }
+
+        if (roles) {
+          user.roles = roles;
+        }
+
+        const saved = await manager.save(User, user);
+        return saved.id;
+      },
+    );
+
+    return this.findOne(savedId);
   }
 
   findAll() {
@@ -124,11 +148,15 @@ export class UsersService {
       user.isActive = updateUserDto.isActive;
     }
 
-    await this.userRepository.save(user);
-
+    // Validar roles antes de cualquier escritura
     if (updateUserDto.role_ids) {
-      return this.setRoles(id, updateUserDto.role_ids);
+      user.roles = await this.resolveActiveRoles(updateUserDto.role_ids);
     }
+
+    // Datos del usuario y relaciones de roles en una sola transacción
+    await this.userRepository.manager.transaction(async (manager) => {
+      await manager.save(User, user);
+    });
 
     return this.findOne(id);
   }
@@ -143,8 +171,7 @@ export class UsersService {
     return this.findOne(id);
   }
 
-  private async setRoles(userId: number, roleIds: number[]) {
-    const user = await this.findOne(userId);
+  private async resolveActiveRoles(roleIds: number[]): Promise<Role[]> {
     const uniqueIds = [...new Set(roleIds)];
     const roles =
       uniqueIds.length === 0
@@ -152,18 +179,18 @@ export class UsersService {
         : await this.roleRepository.findBy({ id: In(uniqueIds) });
 
     if (roles.length !== uniqueIds.length) {
-      throw new NotFoundException('Uno o más roles no existen');
+      const found = new Set(roles.map((role) => role.id));
+      const missing = uniqueIds.filter((roleId) => !found.has(roleId));
+      throw new BadRequestException(`Roles inexistentes: ${missing.join(', ')}`);
     }
 
     const inactivos = roles.filter((role) => !role.isActive);
     if (inactivos.length > 0) {
       const nombres = inactivos.map((role) => role.name).join(', ');
       throw new BadRequestException(`Roles inactivos: ${nombres}`);
-}
+    }
 
-    user.roles = roles;
-    await this.userRepository.save(user);
-    return this.findOne(userId);
+    return roles;
   }
 
   private async assertCanDeactivate(user: User, actorId?: number) {
