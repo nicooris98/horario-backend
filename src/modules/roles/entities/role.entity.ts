@@ -1,5 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { AuditEntity } from '../../../common/entities/audit.entity';
+import { Permission } from '../../permissions/entities/permission.entity';
 
 @Entity('roles')
 export class Role extends AuditEntity {
@@ -32,4 +39,11 @@ export class Role extends AuditEntity {
   })
   isActive: boolean;
 
+  @ManyToMany(() => Permission, (permission) => permission.roles)
+  @JoinTable({
+    name: 'roles_permissions',
+    joinColumn: { name: 'role_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'permission_id', referencedColumnName: 'id' },
+  })
+  permissions: Permission[];
 }
