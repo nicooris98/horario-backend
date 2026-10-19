@@ -16,7 +16,7 @@ import {
 import { FOREIGN_KEY_VIOLATION } from '../../common/constants/database.constants';
 import { findRef, requireDateOrder, requireInt } from '../../common/helpers';
 import { CourseSectionSubject } from '../course-section-subjects/entities/course-section-subject.entity';
-import { CourseSection } from '../course_sections/entities/course_section.entity';
+import { CourseSection } from '../course-sections/entities/course-section.entity';
 import { PositionType } from '../position-types/entities/position-type.entity';
 import { Teacher } from '../teachers/entities/teacher.entity';
 import {
