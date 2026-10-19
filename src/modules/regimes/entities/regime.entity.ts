@@ -1,5 +1,5 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { Subject } from '../../curriculum_subjects/entities/subject.entity';
+import { Subject } from '../../curriculum-subjects/entities/subject.entity';
 
 @Entity('regimen')
 export class Regime {
