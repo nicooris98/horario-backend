@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { In, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -44,18 +44,43 @@ export class UsersService {
   }
 
   async createFromDashboard(dto: CreateDashboardUserDto) {
-    const user = await this.create(dto);
+    const existingUser = await this.findOneByEmail(dto.email);
 
-    if (dto.isActive === false) {
-      user.isActive = false;
-      await this.userRepository.save(user);
+    if (existingUser) {
+      throw new ConflictException('Ya existe un usuario con ese email');
     }
 
-    if (dto.role_ids) {
-      return this.setRoles(user.id, dto.role_ids);
-    }
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    return this.findOne(user.id);
+    const savedId = await this.userRepository.manager.transaction(
+      async (manager) => {
+        // Validar roles dentro de la transaccion, bloqueandolos (FOR SHARE)
+        // para que no se puedan desactivar hasta que termine la asignacion
+        const roles = dto.role_ids
+          ? await this.resolveActiveRoles(manager, dto.role_ids)
+          : undefined;
+
+        const user = manager.create(User, {
+          firstName: dto.first_name,
+          lastName: dto.last_name,
+          email: dto.email,
+          password: hashedPassword,
+        });
+
+        if (dto.isActive === false) {
+          user.isActive = false;
+        }
+
+        if (roles) {
+          user.roles = roles;
+        }
+
+        const saved = await manager.save(User, user);
+        return saved.id;
+      },
+    );
+
+    return this.findOne(savedId);
   }
 
   findAll() {
@@ -137,11 +162,17 @@ export class UsersService {
       user.isActive = updateUserDto.isActive;
     }
 
-    await this.userRepository.save(user);
-
-    if (updateUserDto.role_ids) {
-      return this.setRoles(id, updateUserDto.role_ids);
-    }
+    // Datos del usuario y relaciones de roles en una sola transaccion.
+    // Los roles se validan dentro de ella con bloqueo FOR SHARE.
+    await this.userRepository.manager.transaction(async (manager) => {
+      if (updateUserDto.role_ids) {
+        user.roles = await this.resolveActiveRoles(
+          manager,
+          updateUserDto.role_ids,
+        );
+      }
+      await manager.save(User, user);
+    });
 
     return this.findOne(id);
   }
@@ -156,21 +187,37 @@ export class UsersService {
     return this.findOne(id);
   }
 
-  private async setRoles(userId: number, roleIds: number[]) {
-    const user = await this.findOne(userId);
+  private async resolveActiveRoles(
+    manager: EntityManager,
+    roleIds: number[],
+  ): Promise<Role[]> {
     const uniqueIds = [...new Set(roleIds)];
+    // pessimistic_read = SELECT ... FOR SHARE: las asignaciones concurrentes no
+    // se bloquean entre si, pero una desactivacion (FOR UPDATE) debe esperar.
     const roles =
       uniqueIds.length === 0
         ? []
-        : await this.roleRepository.findBy({ id: In(uniqueIds) });
+        : await manager.find(Role, {
+            where: { id: In(uniqueIds) },
+            lock: { mode: 'pessimistic_read' },
+            order: { id: 'ASC' },
+          });
 
     if (roles.length !== uniqueIds.length) {
-      throw new NotFoundException('Uno o más roles no existen');
+      const found = new Set(roles.map((role) => role.id));
+      const missing = uniqueIds.filter((roleId) => !found.has(roleId));
+      throw new BadRequestException(
+        `Roles inexistentes: ${missing.join(', ')}`,
+      );
     }
 
-    user.roles = roles;
-    await this.userRepository.save(user);
-    return this.findOne(userId);
+    const inactivos = roles.filter((role) => !role.isActive);
+    if (inactivos.length > 0) {
+      const nombres = inactivos.map((role) => role.name).join(', ');
+      throw new BadRequestException(`Roles inactivos: ${nombres}`);
+    }
+    return roles;
+    return roles;
   }
 
   private async assertCanDeactivate(user: User, actorId?: number) {
