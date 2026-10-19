@@ -14,6 +14,11 @@ import { StudyPlanAcademicCyclesModule } from './modules/study-plan-academic-cyc
 import { CourseSectionsModule } from './modules/course-sections/course-sections.module';
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { TeachersModule } from './modules/teachers/teachers.module';
+import { PositionTypesModule } from './modules/position-types/position-types.module';
+import { TeacherAssignmentsModule } from './modules/teacher-assignments/teacher-assignments.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
+import { SeederModule } from './modules/seeder/seeder.module';
 
 @Module({
   imports: [
@@ -24,7 +29,6 @@ import { RolesModule } from './modules/roles/roles.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        console.log('DB_HOST', configService.get<string>('DB_NAME'));
         return {
           type: 'postgres',
           host: configService.get<string>('DB_HOST'),
@@ -32,12 +36,10 @@ import { RolesModule } from './modules/roles/roles.module';
           username: configService.get<string>('DB_USER'),
           password: configService.get<string>('DB_PASS'),
           port: configService.get<number>('DB_PORT'),
-          entities: [
-          __dirname + '/**/*.entity{.ts,.js}',
-      ],
-          synchronize: false
-        }
-      }
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: false,
+        };
+      },
     }),
     SubjectsModule,
     AuthModule,
@@ -51,7 +53,12 @@ import { RolesModule } from './modules/roles/roles.module';
     StudyPlanAcademicCyclesModule,
     CourseSectionsModule,
     RolesModule,
+    PermissionsModule,
     UsersModule,
+    TeachersModule,
+    PositionTypesModule,
+    TeacherAssignmentsModule,
+    SeederModule,
   ],
   controllers: [],
   providers: [],

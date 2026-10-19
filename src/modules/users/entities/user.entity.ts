@@ -1,5 +1,13 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Exclude } from 'class-transformer';
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { AuditEntity } from '../../../common/entities/audit.entity';
+import { Role } from '../../roles/entities/role.entity';
 
 @Entity('users')
 export class User extends AuditEntity {
@@ -31,6 +39,7 @@ export class User extends AuditEntity {
   })
   email: string;
 
+  @Exclude()
   @Column({
     name: 'password',
     type: 'varchar',
@@ -45,4 +54,11 @@ export class User extends AuditEntity {
   })
   isActive: boolean;
 
+  @ManyToMany(() => Role)
+  @JoinTable({
+    name: 'roles_users',
+    joinColumn: { name: 'user_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'role_id', referencedColumnName: 'id' },
+  })
+  roles: Role[];
 }
