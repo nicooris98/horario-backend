@@ -78,6 +78,19 @@ export class UsersService {
     return user;
   }
 
+  async findOneWithPermissions(id: number) {
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: { roles: { permissions: true } },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`No existe el usuario con id ${id}`);
+    }
+
+    return user;
+  }
+
   async findOneByEmail(email: string, withRoles = false) {
     return this.userRepository.findOne({
       where: { email: email.trim().toLowerCase() },

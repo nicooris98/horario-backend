@@ -20,7 +20,7 @@ export class RolesService {
   }
 
   findAll() {
-    return this.roleRepository.find();
+    return this.roleRepository.find({ relations: { permissions: true } });
   }
 
   async findOne(id: number) {
@@ -54,7 +54,7 @@ export class RolesService {
     return this.roleRepository.save(role);
   }
 
-    async addPermission(roleId: number, permissionId: number) {
+  async addPermission(roleId: number, permissionId: number) {
     const role = await this.findOneWithPermissions(roleId);
     const permission = await this.permissionsService.findOne(permissionId);
 

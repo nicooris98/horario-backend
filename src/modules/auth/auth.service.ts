@@ -40,6 +40,37 @@ export class AuthService {
     };
   }
 
+  async getProfile(userId: number) {
+    const user = await this.userService.findOneWithPermissions(userId);
+    const activeRoles = (user.roles ?? []).filter((role) => role.isActive);
+    const permissions = [
+      ...new Set(
+        activeRoles.flatMap((role) =>
+          (role.permissions ?? [])
+            .filter((permission) => permission.isActive)
+            .map((permission) => permission.code),
+        ),
+      ),
+    ];
+
+    return {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      roles: activeRoles.map(({ id, name, description, isActive }) => ({
+        id,
+        name,
+        description,
+        isActive,
+      })),
+      permissions,
+    };
+  }
+
   private signToken(user: User) {
     const payload: JwtPayload = {
       sub: user.id,
