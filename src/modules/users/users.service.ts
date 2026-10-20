@@ -310,7 +310,6 @@ export class UsersService {
       throw new BadRequestException(`Roles inactivos: ${nombres}`);
     }
     return roles;
-    return roles;
   }
 
   private async assertCanDeactivate(user: User, actorId?: number) {
