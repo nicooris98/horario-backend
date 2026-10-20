@@ -18,10 +18,26 @@ export class AuthService {
     return this.userService.create(registerDto);
   }
 
+  verifyActivationCode(email: string, code: string) {
+    return this.userService.verifyActivationCode(email, code);
+  }
+
+  setActivationPassword(token: string, password: string, confirmation: string) {
+    return this.userService.setActivationPassword(
+      token,
+      password,
+      confirmation,
+    );
+  }
+
+  resendActivationCode(email: string) {
+    return this.userService.resendActivationCode(email);
+  }
+
   async login(loginDto: LoginDto) {
     const user = await this.userService.findOneByEmail(loginDto.email, true);
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || !user.password) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 

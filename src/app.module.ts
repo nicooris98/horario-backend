@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { join } from 'node:path';
 import { SubjectsModule } from './modules/curriculum-subjects/subjects.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -23,6 +24,7 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: join(__dirname, '..', '.env'),
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
