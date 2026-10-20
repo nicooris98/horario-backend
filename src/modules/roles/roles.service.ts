@@ -20,7 +20,7 @@ export class RolesService {
   }
 
   findAll() {
-    return this.roleRepository.find();
+    return this.roleRepository.find({ relations: { permissions: true } });
   }
 
   async findOne(id: number) {
@@ -49,12 +49,23 @@ export class RolesService {
   }
 
   async setActive(id: number, isActive: boolean) {
-    const role = await this.findOne(id);
-    role.isActive = isActive;
-    return this.roleRepository.save(role);
+    // Bloquea la fila del rol (FOR UPDATE): espera a que terminen las
+    // asignaciones en curso que lo tienen con FOR SHARE. Si algo falla,
+    // la transaccion se revierte.
+    return this.roleRepository.manager.transaction(async (manager) => {
+      const role = await manager.findOne(Role, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!role) {
+        throw new NotFoundException(`Role #${id} not found`);
+      }
+      role.isActive = isActive;
+      return manager.save(Role, role);
+    });
   }
 
-    async addPermission(roleId: number, permissionId: number) {
+  async addPermission(roleId: number, permissionId: number) {
     const role = await this.findOneWithPermissions(roleId);
     const permission = await this.permissionsService.findOne(permissionId);
 

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { join } from 'node:path';
 import { SubjectsModule } from './modules/curriculum-subjects/subjects.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -18,12 +19,12 @@ import { TeachersModule } from './modules/teachers/teachers.module';
 import { PositionTypesModule } from './modules/position-types/position-types.module';
 import { TeacherAssignmentsModule } from './modules/teacher-assignments/teacher-assignments.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
-import { SeederModule } from './modules/seeder/seeder.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: join(__dirname, '..', '.env'),
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -58,7 +59,6 @@ import { SeederModule } from './modules/seeder/seeder.module';
     TeachersModule,
     PositionTypesModule,
     TeacherAssignmentsModule,
-    SeederModule,
   ],
   controllers: [],
   providers: [],

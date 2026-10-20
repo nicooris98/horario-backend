@@ -1,103 +1,66 @@
-import { Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DataSource, Repository } from 'typeorm';
-import { Role } from '../../roles/entities/role.entity';
-import { User } from '../../users/entities/user.entity';
+import { isEmail } from 'class-validator';
+import { EntityManager } from 'typeorm';
 import { UsersService } from '../../users/users.service';
-import { RoleName } from '../../../common/constants/roles';
 
+export interface AdminSeedConfiguration {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
+@Injectable()
 export class AdminSeeder {
   private readonly logger = new Logger(AdminSeeder.name);
 
   constructor(
-    private readonly dataSource: DataSource,
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
   ) {}
 
-  async run(): Promise<void> {
-    const roleRepository = this.dataSource.getRepository(Role);
-    const userRepository = this.dataSource.getRepository(User);
+  getConfiguration(): AdminSeedConfiguration {
+    const email = this.configService.get<string>('SEED_ADMIN_EMAIL')?.trim();
+    const password = this.configService.get<string>('SEED_ADMIN_PASSWORD');
 
-    const adminRole = await this.ensureAdminRole(roleRepository);
-    const adminUser = await this.ensureFirstUser(userRepository);
+    if (!email || !isEmail(email)) {
+      throw new Error('SEED_ADMIN_EMAIL must be a valid email address');
+    }
 
-    const alreadyAssigned = (adminUser.roles ?? []).some(
-      (role) => role.id === adminRole.id,
-    );
-
-    if (!alreadyAssigned) {
-      adminUser.roles = [...(adminUser.roles ?? []), adminRole];
-      await userRepository.save(adminUser);
-      this.logger.log(
-        `Rol ${RoleName.ADMIN} asignado al usuario ${adminUser.email}`,
+    if (!password || password.length < 12) {
+      throw new Error(
+        'SEED_ADMIN_PASSWORD must contain at least 12 characters',
       );
     }
-  }
 
-  private async ensureAdminRole(roleRepository: Repository<Role>) {
-    const existing = await roleRepository.findOne({
-      where: { name: RoleName.ADMIN },
-    });
-
-    if (existing) {
-      return existing;
-    }
-
-    const saved = await roleRepository.save(
-      roleRepository.create({
-        name: RoleName.ADMIN,
-        description: 'Administrador del sistema',
-        isActive: true,
-      }),
-    );
-
-    this.logger.log(`Rol ${RoleName.ADMIN} creado`);
-    return saved;
-  }
-
-  private async ensureFirstUser(userRepository: Repository<User>) {
-    const [firstUser] = await userRepository.find({
-      relations: { roles: true },
-      order: { id: 'ASC' },
-      take: 1,
-    });
-
-    if (firstUser) {
-      return firstUser;
-    }
-
-    const email = this.configService.get<string>(
-      'SEED_ADMIN_EMAIL',
-      'admin@horario.local',
-    );
-    const existingByEmail = await this.usersService.findOneByEmail(email, true);
-
-    if (existingByEmail) {
-      return existingByEmail;
-    }
-
-    const created = await this.usersService.create({
-      first_name: this.configService.get<string>(
-        'SEED_ADMIN_FIRST_NAME',
+    return {
+      email: email.toLowerCase(),
+      password,
+      firstName:
+        this.configService.get<string>('SEED_ADMIN_FIRST_NAME')?.trim() ||
         'Admin',
-      ),
-      last_name: this.configService.get<string>(
-        'SEED_ADMIN_LAST_NAME',
+      lastName:
+        this.configService.get<string>('SEED_ADMIN_LAST_NAME')?.trim() ||
         'Sistema',
-      ),
-      email,
-      password: this.configService.get<string>(
-        'SEED_ADMIN_PASSWORD',
-        'Admin1234',
-      ),
-    });
+    };
+  }
 
-    this.logger.log(`Usuario administrador creado: ${created.email}`);
+  async run(
+    manager: EntityManager,
+    configuration: AdminSeedConfiguration,
+  ): Promise<void> {
+    const result = await this.usersService.ensureConfiguredAdmin(
+      manager,
+      configuration,
+    );
 
-    return userRepository.findOneOrFail({
-      where: { id: created.id },
-      relations: { roles: true },
-    });
+    this.logger.log(
+      result.created
+        ? 'Initial administrator account created and assigned the admin role'
+        : result.roleAssigned
+          ? 'Admin role assigned to the explicitly configured account'
+          : 'Configured administrator account already has the admin role',
+    );
   }
 }
