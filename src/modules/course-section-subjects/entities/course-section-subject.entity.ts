@@ -5,8 +5,8 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { CourseSection } from '../../course_sections/entities/course_section.entity';
-import { Subject } from '../../curriculum_subjects/entities/subject.entity';
+import { CourseSection } from '../../course-sections/entities/course-section.entity';
+import { Subject } from '../../curriculum-subjects/entities/subject.entity';
 
 // Entidad mínima para que el Módulo 2 pueda asignar docentes a una materia
 // de una división. El CRUD de esta tabla le corresponde al Módulo 1 (#13).
