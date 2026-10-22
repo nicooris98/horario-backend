@@ -23,7 +23,7 @@ export class UsersService {
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
     private readonly activationService: UserActivationService,
-  ) {}
+  ) { }
 
   async create(createUserDto: CreateUserDto) {
     const existingUser = await this.findOneByEmail(createUserDto.email);
@@ -61,6 +61,8 @@ export class UsersService {
       throw new ConflictException('Ya existe un usuario con ese email');
     }
 
+
+
     const { savedId, delivery } = await this.userRepository.manager.transaction(
       async (manager) => {
         // Validar roles dentro de la transaccion, bloqueandolos (FOR SHARE)
@@ -69,19 +71,23 @@ export class UsersService {
           ? await this.resolveActiveRoles(manager, dto.role_ids)
           : undefined;
 
+
         const user = manager.create(User, {
           firstName: dto.first_name,
           lastName: dto.last_name,
           email: dto.email,
+
           password: null,
           isActive: false,
         });
+
 
         if (roles) {
           user.roles = roles;
         }
 
         const saved = await manager.save(User, user);
+
         const activationDelivery =
           await this.activationService.createInitialChallenge(manager, saved);
         return { savedId: saved.id, delivery: activationDelivery };
@@ -102,6 +108,7 @@ export class UsersService {
 
   resendActivationCode(email: string): Promise<{ message: string }> {
     return this.activationService.resendCode(email);
+
   }
 
   findAll() {
@@ -218,6 +225,7 @@ export class UsersService {
     return this.findOne(id);
   }
 
+
   async ensureConfiguredAdmin(
     manager: EntityManager,
     configuration: {
@@ -280,6 +288,7 @@ export class UsersService {
     return { created, roleAssigned: true };
   }
 
+
   private async resolveActiveRoles(
     manager: EntityManager,
     roleIds: number[],
@@ -291,17 +300,18 @@ export class UsersService {
       uniqueIds.length === 0
         ? []
         : await manager.find(Role, {
-            where: { id: In(uniqueIds) },
-            lock: { mode: 'pessimistic_read' },
-            order: { id: 'ASC' },
-          });
+          where: { id: In(uniqueIds) },
+          lock: { mode: 'pessimistic_read' },
+          order: { id: 'ASC' },
+        });
 
     if (roles.length !== uniqueIds.length) {
       const found = new Set(roles.map((role) => role.id));
       const missing = uniqueIds.filter((roleId) => !found.has(roleId));
-      throw new BadRequestException(
-        `Roles inexistentes: ${missing.join(', ')}`,
-      );
+
+      throw new BadRequestException(`Roles inexistentes: ${missing.join(', ')}`);
+
+
     }
 
     const inactivos = roles.filter((role) => !role.isActive);
@@ -309,6 +319,7 @@ export class UsersService {
       const nombres = inactivos.map((role) => role.name).join(', ');
       throw new BadRequestException(`Roles inactivos: ${nombres}`);
     }
+
     return roles;
   }
 
