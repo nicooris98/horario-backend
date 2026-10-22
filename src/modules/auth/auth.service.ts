@@ -18,10 +18,26 @@ export class AuthService {
     return this.userService.create(registerDto);
   }
 
+  verifyActivationCode(email: string, code: string) {
+    return this.userService.verifyActivationCode(email, code);
+  }
+
+  setActivationPassword(token: string, password: string, confirmation: string) {
+    return this.userService.setActivationPassword(
+      token,
+      password,
+      confirmation,
+    );
+  }
+
+  resendActivationCode(email: string) {
+    return this.userService.resendActivationCode(email);
+  }
+
   async login(loginDto: LoginDto) {
     const user = await this.userService.findOneByEmail(loginDto.email, true);
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || !user.password) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
@@ -37,6 +53,37 @@ export class AuthService {
     return {
       accessToken: this.signToken(user),
       user,
+    };
+  }
+
+  async getProfile(userId: number) {
+    const user = await this.userService.findOneWithPermissions(userId);
+    const activeRoles = (user.roles ?? []).filter((role) => role.isActive);
+    const permissions = [
+      ...new Set(
+        activeRoles.flatMap((role) =>
+          (role.permissions ?? [])
+            .filter((permission) => permission.isActive)
+            .map((permission) => permission.code),
+        ),
+      ),
+    ];
+
+    return {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      roles: activeRoles.map(({ id, name, description, isActive }) => ({
+        id,
+        name,
+        description,
+        isActive,
+      })),
+      permissions,
     };
   }
 

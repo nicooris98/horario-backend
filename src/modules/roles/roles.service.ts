@@ -4,12 +4,14 @@ import { Repository } from 'typeorm';
 import { Role } from './entities/role.entity';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { PermissionsService } from '../permissions/permissions.service';
 
 @Injectable()
 export class RolesService {
   constructor(
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
+    private readonly permissionsService: PermissionsService,
   ) {}
 
   create(createRoleDto: CreateRoleDto) {
@@ -18,11 +20,22 @@ export class RolesService {
   }
 
   findAll() {
-    return this.roleRepository.find();
+    return this.roleRepository.find({ relations: { permissions: true } });
   }
 
   async findOne(id: number) {
     const role = await this.roleRepository.findOne({ where: { id } });
+    if (!role) {
+      throw new NotFoundException(`Role #${id} not found`);
+    }
+    return role;
+  }
+
+  async findOneWithPermissions(id: number) {
+    const role = await this.roleRepository.findOne({
+      where: { id },
+      relations: { permissions: true },
+    });
     if (!role) {
       throw new NotFoundException(`Role #${id} not found`);
     }
@@ -35,9 +48,39 @@ export class RolesService {
     return this.roleRepository.save(role);
   }
 
-  async remove(id: number) {
-    const role = await this.findOne(id);
-    await this.roleRepository.softRemove(role);
+  async setActive(id: number, isActive: boolean) {
+    // Bloquea la fila del rol (FOR UPDATE): espera a que terminen las
+    // asignaciones en curso que lo tienen con FOR SHARE. Si algo falla,
+    // la transaccion se revierte.
+    return this.roleRepository.manager.transaction(async (manager) => {
+      const role = await manager.findOne(Role, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!role) {
+        throw new NotFoundException(`Role #${id} not found`);
+      }
+      role.isActive = isActive;
+      return manager.save(Role, role);
+    });
+  }
+
+  async addPermission(roleId: number, permissionId: number) {
+    const role = await this.findOneWithPermissions(roleId);
+    const permission = await this.permissionsService.findOne(permissionId);
+
+    const yaLoTiene = role.permissions.some((p) => p.id === permission.id);
+    if (!yaLoTiene) {
+      role.permissions.push(permission);
+      await this.roleRepository.save(role);
+    }
+    return role;
+  }
+
+  async removePermission(roleId: number, permissionId: number) {
+    const role = await this.findOneWithPermissions(roleId);
+    role.permissions = role.permissions.filter((p) => p.id !== permissionId);
+    await this.roleRepository.save(role);
     return role;
   }
 }
