@@ -33,6 +33,8 @@ import {
   positionKind,
   today,
 } from './teacher-assignments.helpers';
+import { ScheduleOverlapService } from '../schedules/schedule-overlap.service';
+import { Schedule } from '../schedules/entities/schedule.entity';
 
 type Draft = Omit<TeacherAssignment, 'id'>;
 
@@ -41,6 +43,7 @@ export class TeacherAssignmentsService {
   constructor(
     @InjectRepository(TeacherAssignment)
     private readonly repository: Repository<TeacherAssignment>,
+    private readonly scheduleOverlapService: ScheduleOverlapService,
   ) {}
 
   async create(dto: CreateTeacherAssignmentDto) {
@@ -120,7 +123,6 @@ export class TeacherAssignmentsService {
         positionTypeId: dto.positionTypeId ?? item.positionType.id,
         courseSectionSubjectId:
           dto.courseSectionSubjectId ?? item.courseSectionSubject.id,
-        // Se acepta null para sacar la referencia al cambiar de tipo de cargo.
         replacedAssignmentId:
           dto.replacedAssignmentId !== undefined
             ? dto.replacedAssignmentId
@@ -162,8 +164,6 @@ export class TeacherAssignmentsService {
     }
   }
 
-  // Busca las referencias y aplica las reglas que dependen del tipo de cargo.
-  // `previous` es la asignación que se está editando, si la hay.
   private async build(
     dto: CreateTeacherAssignmentDto,
     previous?: TeacherAssignment,
@@ -240,8 +240,6 @@ export class TeacherAssignmentsService {
     };
   }
 
-  // HU-M2-07: el suplente hereda división y horas del titular, con su propia
-  // vigencia, que tiene que caer dentro de la del titular.
   private async inheritFromTitular(
     dto: CreateTeacherAssignmentDto,
     teacher: Teacher,
@@ -310,7 +308,6 @@ export class TeacherAssignmentsService {
     };
   }
 
-  // Reglas que dependen de las otras asignaciones con fechas que se cruzan.
   private async validate(draft: Draft, exceptId?: number) {
     const others: FindOptionsWhere<TeacherAssignment> = exceptId
       ? { id: Not(exceptId) }
@@ -350,8 +347,6 @@ export class TeacherAssignmentsService {
       return;
     }
 
-    // HU-M2-03: más de un titular solo si la materia lo permite, y sin pasar
-    // el máximo. Los suplentes no cuentan porque reemplazan a un titular.
     const { allowsMultipleTeachers, maxTeachers } =
       draft.courseSectionSubject.subject;
     const titulars = await this.repository.count({
@@ -371,6 +366,32 @@ export class TeacherAssignmentsService {
         `the subject allows at most ${maxTeachers} teachers in this course section`,
       );
     }
+
+    // --- NUEVO: Validación de solapamiento horario (Módulo 3.2) ---
+    const schedules = await this.repository.manager.find(Schedule, {
+      where: { courseSectionSubject: { id: draft.courseSectionSubject.id } },
+      relations: { day: true, classHour: true },
+    });
+
+    if (schedules.length > 0) {
+      for (const schedule of schedules) {
+        const conflicts = await this.scheduleOverlapService.checkOverlap({
+          idEccd: draft.courseSectionSubject.id,
+          idDia: schedule.day.id,
+          idHoraCatedra: schedule.classHour.id,
+          fechaDesde: startDate,
+          fechaHasta: endDate || null,
+        });
+
+        if (conflicts.length > 0) {
+          const c = conflicts[0];
+          throw new ConflictException(
+            `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada en el día ${schedule.day.name} (Horario existente ID: ${c.idHorarioExistente}).`,
+          );
+        }
+      }
+    }
+    // --- FIN NUEVO ---
   }
 
   private hasSubstitutes(id: number) {
