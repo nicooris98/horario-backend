@@ -16,7 +16,6 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
 import type { Response } from 'express';
 import { VerifyActivationCodeDto } from '../users/dto/verify-activation-code.dto';
-import { ResendActivationCodeDto } from '../users/dto/resend-activation-code.dto';
 import { SetActivationPasswordDto } from '../users/dto/set-activation-password.dto';
 
 @Controller('auth')
@@ -54,12 +53,6 @@ export class AuthController {
     return { ...verification, user };
   }
 
-  @Post('activation/resend-code')
-  @HttpCode(HttpStatus.OK)
-  resendActivationCode(@Body() dto: ResendActivationCodeDto) {
-    return this.authService.resendActivationCode(dto.email);
-  }
-
   @Post('activation/set-password')
   @HttpCode(HttpStatus.OK)
   setActivationPassword(@Body() dto: SetActivationPasswordDto) {
@@ -76,9 +69,13 @@ export class AuthController {
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { accessToken, user } = await this.authService.login(loginDto);
+    const result = await this.authService.login(loginDto.email);
 
-    res.cookie('access_token', accessToken, {
+    if (result.verificationRequired) {
+      return { verificationRequired: true };
+    }
+
+    res.cookie('access_token', result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -86,7 +83,7 @@ export class AuthController {
       path: '/',
     });
 
-    return { user };
+    return { verificationRequired: false, user: result.user };
   }
 
   @Post('logout')
