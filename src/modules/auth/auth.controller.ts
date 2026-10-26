@@ -31,8 +31,27 @@ export class AuthController {
 
   @Post('activation/verify-code')
   @HttpCode(HttpStatus.OK)
-  verifyActivationCode(@Body() dto: VerifyActivationCodeDto) {
-    return this.authService.verifyActivationCode(dto.email, dto.code);
+  async verifyActivationCode(
+    @Body() dto: VerifyActivationCodeDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const verification = await this.authService.verifyActivationCode(
+      dto.email,
+      dto.code,
+    );
+    const { accessToken, user } = await this.authService.createSession(
+      dto.email,
+    );
+
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 8,
+      path: '/',
+    });
+
+    return { ...verification, user };
   }
 
   @Post('activation/resend-code')

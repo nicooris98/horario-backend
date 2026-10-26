@@ -22,6 +22,19 @@ export class AuthService {
     return this.userService.verifyActivationCode(email, code);
   }
 
+  async createSession(email: string) {
+    const user = await this.userService.findOneByEmail(email, true);
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    return {
+      accessToken: this.signToken(user),
+      user,
+    };
+  }
+
   setActivationPassword(token: string, password: string, confirmation: string) {
     return this.userService.setActivationPassword(
       token,
