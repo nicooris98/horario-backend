@@ -8,6 +8,7 @@ export interface CheckOverlapParams {
   fechaDesde: string;
   fechaHasta: string | null;
   excludeIdHorario?: number;
+  idDocente?: number;
 }
 
 export interface OverlapConflict {
@@ -32,9 +33,9 @@ export class ScheduleOverlapService {
       fechaDesde,
       fechaHasta,
       excludeIdHorario,
+      idDocente,
     } = params;
 
-    // Nota: TypeORM con PostgreSQL usa $1, $2 para los parámetros en consultas nativas.
     const sql = `
       WITH
       params AS (
@@ -44,7 +45,8 @@ export class ScheduleOverlapService {
           $3::integer AS id_hora_catedra,
           $4::date AS fecha_desde,
           $5::date AS fecha_hasta,
-          $6::integer AS id_horario_excluir
+          $6::integer AS id_horario_excluir,
+          $7::integer AS id_docente
       ),
       new_slot AS (
         SELECT
@@ -106,6 +108,7 @@ export class ScheduleOverlapService {
               ) && ns.schedule_window
       ),
       raw_assignment_windows AS (
+        -- 1. Horarios existentes (sus docentes asignados)
         SELECT
           sw.scope_id,
           sw.scope_kind,
@@ -124,7 +127,61 @@ export class ScheduleOverlapService {
           ) AS assignment_window
         FROM schedule_windows sw
         JOIN asignacion_docente a ON a.id_espacio_curricular_curso_division = sw.id_eccd
-        WHERE a.fecha_desde IS NOT NULL
+        WHERE sw.scope_kind = 'existing'
+          AND a.fecha_desde IS NOT NULL
+          AND NOT isempty(
+            sw.schedule_window * daterange(
+              a.fecha_desde,
+              CASE
+                WHEN a.fecha_hasta IS NULL THEN NULL
+                ELSE a.fecha_hasta + 1
+              END,
+              '[)'
+            )
+          )
+
+        UNION ALL
+
+        -- 2. Docente forzado (para validar Asignaciones)
+        SELECT
+          sw.scope_id,
+          sw.scope_kind,
+          sw.id_horario,
+          sw.id_eccd,
+          NULL::integer AS id_asignacion,
+          p.id_docente,
+          NULL::integer AS id_asignacion_titular,
+          sw.schedule_window AS assignment_window
+        FROM schedule_windows sw
+        CROSS JOIN params p
+        WHERE sw.scope_kind = 'new'
+          AND p.id_docente IS NOT NULL
+
+        UNION ALL
+
+        -- 3. Docentes del ECCD (comportamiento original para Horarios)
+        SELECT
+          sw.scope_id,
+          sw.scope_kind,
+          sw.id_horario,
+          sw.id_eccd,
+          a.id_asignacion_docente AS id_asignacion,
+          a.id_docente,
+          a.id_asignacion_titular AS id_asignacion_titular,
+          sw.schedule_window * daterange(
+            a.fecha_desde,
+            CASE
+              WHEN a.fecha_hasta IS NULL THEN NULL
+              ELSE a.fecha_hasta + 1
+            END,
+            '[)'
+          ) AS assignment_window
+        FROM schedule_windows sw
+        JOIN asignacion_docente a ON a.id_espacio_curricular_curso_division = sw.id_eccd
+        CROSS JOIN params p
+        WHERE sw.scope_kind = 'new'
+          AND p.id_docente IS NULL
+          AND a.fecha_desde IS NOT NULL
           AND NOT isempty(
             sw.schedule_window * daterange(
               a.fecha_desde,
@@ -205,7 +262,6 @@ export class ScheduleOverlapService {
       ORDER BY c.id_docente_efectivo, c.id_horario_existente;
     `;
 
-    // Pasamos null si excludeIdHorario es undefined
     const queryParams = [
       idEccd,
       idDia,
@@ -213,6 +269,7 @@ export class ScheduleOverlapService {
       fechaDesde,
       fechaHasta,
       excludeIdHorario || null,
+      idDocente || null,
     ];
 
     return this.dataSource.query(sql, queryParams);
