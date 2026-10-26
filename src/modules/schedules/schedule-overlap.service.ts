@@ -148,7 +148,7 @@ export class ScheduleOverlapService {
           effective_window
         FROM raw_assignment_windows r
         CROSS JOIN LATERAL unnest(
-          r.assignment_window -
+          datemultirange(r.assignment_window) -
           COALESCE(
             (
               SELECT range_agg(s.assignment_window)
