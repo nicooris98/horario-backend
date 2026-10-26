@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm'; 
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleOverlapService } from './schedule-overlap.service';
-import { Day } from './entities/day.entity'; 
-import { Schedule } from './entities/schedule.entity'; 
+import { SchedulesService } from './schedules.service'; 
+import { Day } from './entities/day.entity';
+import { Schedule } from './entities/schedule.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Day, Schedule])], 
-  providers: [ScheduleOverlapService],
-  exports: [ScheduleOverlapService],
+  imports: [TypeOrmModule.forFeature([Day, Schedule])],
+  providers: [ScheduleOverlapService, SchedulesService], 
+  exports: [ScheduleOverlapService, SchedulesService], 
 })
 export class SchedulesModule {}
