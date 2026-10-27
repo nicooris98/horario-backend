@@ -38,7 +38,6 @@ starts. Configure these values in `.env` before running it:
 
 ```env
 SEED_ADMIN_EMAIL=your-admin-email@example.com
-SEED_ADMIN_PASSWORD=replace-with-a-generated-secret-of-at-least-12-characters
 SEED_ADMIN_FIRST_NAME=Admin
 SEED_ADMIN_LAST_NAME=Sistema
 ```
@@ -51,10 +50,13 @@ pnpm run seed:initial-data
 
 The command creates missing initial roles and permissions, adds their declared
 role-permission links without removing existing links, and creates or assigns
-the `admin` role only to the account identified by `SEED_ADMIN_EMAIL`. If that
-account already exists, its password and personal details are not changed.
-All seed operations run in one database transaction and fail if either required
-credential is missing or invalid. Do not run this command against production
+the `admin` role only to the account identified by `SEED_ADMIN_EMAIL`. The
+account is stored without a password. If it already exists, its password is
+cleared and its personal details are not changed. Outside production, that
+email opens the dashboard directly. In production nobody signs in with a
+password: every account, including the administrator, receives a verification
+code. All seed operations run in one database transaction and fail if the
+admin email is missing or invalid. Do not run this command against production
 without explicit authorization.
 
 ## Account activation by email
@@ -124,25 +126,29 @@ Set the user's password with `POST /auth/activation/set-password`:
 
 The token expires after 15 minutes and is invalidated when used. Users who
 already supplied a password during public registration do not receive this
-temporary token. Login requires both a verified account and a configured
-password. Administrators cannot use `PATCH /users/:id` to set a password for a
+temporary token. In production, `POST /auth/activation/set-password` is
+rejected. Administrators cannot use `PATCH /users/:id` to set a password for a
 passwordless account; its initial password must be set with this activation
 token.
 
-Request a new code with `POST /auth/activation/resend-code`:
+Start a session or send a code with `POST /auth/login`:
 
 ```json
 { "email": "user@example.com" }
 ```
 
-Resend responses are deliberately generic to avoid disclosing whether an
-account exists. Codes expire after 10 minutes, are single-use, allow at most
-five verification attempts, and are limited to five sends per hour with a
-one-minute cooldown. A failed initial delivery leaves the account pending; the
-administrator should retry through `POST /auth/activation/resend-code` rather
-than creating that user again. The activation schema is managed by the SQL
-script and is not applied automatically at application startup. The SQL
-preserves all existing password values.
+Outside production, the email configured in `SEED_ADMIN_EMAIL` receives a
+session cookie and `{ "verificationRequired": false }`. Every other account,
+and every account in production, receives a verification code and
+`{ "verificationRequired": true }`. That response is deliberately generic and
+does not disclose whether the account exists. The same endpoint sends a new
+code from the verification screen. Codes expire after 10 minutes, are
+single-use, allow at most five verification attempts, and are limited to five
+sends per hour with a one-minute cooldown. A failed initial delivery leaves the
+account pending; retry through `POST /auth/login` rather than creating that
+user again. The activation schema is managed by the SQL script and is not
+applied automatically at application startup. The SQL preserves all existing
+password values.
 
 ## Compile and run the project
 

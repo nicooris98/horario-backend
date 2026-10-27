@@ -81,7 +81,7 @@ export class UserActivationService {
         where: { email: normalizedEmail },
         lock: { mode: 'pessimistic_write' },
       });
-      if (!user || (user.isActive && user.password)) {
+      if (!user || this.passwordBlocksCode(user)) {
         return { activated: false as const };
       }
 
@@ -115,9 +115,10 @@ export class UserActivationService {
 
       challenge.consumedAt = now;
       user.isActive = true;
-      const passwordSetupToken = user.password
-        ? undefined
-        : randomBytes(32).toString('hex');
+      const passwordSetupToken =
+        this.isProduction() || user.password
+          ? undefined
+          : randomBytes(32).toString('hex');
       challenge.passwordSetupTokenHash = passwordSetupToken
         ? this.hashCode(passwordSetupToken)
         : null;
@@ -147,6 +148,12 @@ export class UserActivationService {
     password: string,
     confirmation: string,
   ): Promise<{ message: string }> {
+    if (this.isProduction()) {
+      throw new BadRequestException(
+        'La contraseña no se utiliza en producción',
+      );
+    }
+
     if (password !== confirmation) {
       throw new BadRequestException('Las contraseñas no coinciden');
     }
@@ -200,7 +207,7 @@ export class UserActivationService {
           where: { email: normalizedEmail },
           lock: { mode: 'pessimistic_write' },
         });
-        if (!user || (user.isActive && user.password)) {
+        if (!user || this.passwordBlocksCode(user)) {
           return undefined;
         }
 
@@ -255,8 +262,16 @@ export class UserActivationService {
 
     return {
       message:
-        'Si la cuenta existe y está pendiente de activación, se enviará un código.',
+        'Si la cuenta existe, se enviará un código de verificación.',
     };
+  }
+
+  private isProduction(): boolean {
+    return this.configService.get<string>('NODE_ENV') === 'production';
+  }
+
+  private passwordBlocksCode(user: User): boolean {
+    return !this.isProduction() && Boolean(user.isActive && user.password);
   }
 
   private generateCode(): string {
