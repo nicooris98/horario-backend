@@ -46,6 +46,7 @@ export class StudyPlanService {
         name: dto.name.trim(),
         endDate: dto.endDate ?? null,
         degree,
+        status: dto.status ?? 'ACTIVO',
       }),
     );
   }
