@@ -200,6 +200,13 @@ export class UsersService {
       user.isActive = updateUserDto.isActive;
     }
 
+    if (updateUserDto.isDisabled !== undefined) {
+      if (updateUserDto.isDisabled === true) {
+        await this.assertCanDeactivate(user, actorId);
+      }
+      user.isDisabled = updateUserDto.isDisabled;
+    }
+
     // Datos del usuario y relaciones de roles en una sola transaccion.
     // Los roles se validan dentro de ella con bloqueo FOR SHARE.
     await this.userRepository.manager.transaction(async (manager) => {
@@ -219,7 +226,7 @@ export class UsersService {
     const user = await this.findOne(id);
     await this.assertCanDeactivate(user, actorId);
 
-    user.isActive = false;
+    user.isDisabled = true;
     await this.userRepository.save(user);
 
     return this.findOne(id);
@@ -342,6 +349,7 @@ export class UsersService {
       .where('role.name = :name', { name: RoleName.ADMIN })
       .andWhere('user.isActive = :isActive', { isActive: true })
       .andWhere('role.isActive = :roleActive', { roleActive: true })
+      .andWhere('user.isDisabled = :isDisabled', { isDisabled: false })
       .getCount();
 
     if (adminCount <= 1) {

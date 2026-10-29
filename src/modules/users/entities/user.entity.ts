@@ -54,6 +54,13 @@ export class User extends AuditEntity {
     default: true,
   })
   isActive: boolean;
+  
+  @Column({
+    name: 'is_disabled',
+    type: 'boolean',
+    default: false,
+  })
+  isDisabled: boolean;
 
   @ManyToMany(() => Role)
   @JoinTable({

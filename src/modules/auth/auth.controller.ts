@@ -16,7 +16,6 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
 import type { Response } from 'express';
 import { VerifyActivationCodeDto } from '../users/dto/verify-activation-code.dto';
-import { ResendActivationCodeDto } from '../users/dto/resend-activation-code.dto';
 import { SetActivationPasswordDto } from '../users/dto/set-activation-password.dto';
 
 @Controller('auth')
@@ -31,14 +30,27 @@ export class AuthController {
 
   @Post('activation/verify-code')
   @HttpCode(HttpStatus.OK)
-  verifyActivationCode(@Body() dto: VerifyActivationCodeDto) {
-    return this.authService.verifyActivationCode(dto.email, dto.code);
-  }
+  async verifyActivationCode(
+    @Body() dto: VerifyActivationCodeDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const verification = await this.authService.verifyActivationCode(
+      dto.email,
+      dto.code,
+    );
+    const { accessToken, user } = await this.authService.createSession(
+      dto.email,
+    );
 
-  @Post('activation/resend-code')
-  @HttpCode(HttpStatus.OK)
-  resendActivationCode(@Body() dto: ResendActivationCodeDto) {
-    return this.authService.resendActivationCode(dto.email);
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 8,
+      path: '/',
+    });
+
+    return { ...verification, user };
   }
 
   @Post('activation/set-password')
@@ -57,9 +69,13 @@ export class AuthController {
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { accessToken, user } = await this.authService.login(loginDto);
+    const result = await this.authService.login(loginDto.email);
 
-    res.cookie('access_token', accessToken, {
+    if (result.verificationRequired) {
+      return { verificationRequired: true };
+    }
+
+    res.cookie('access_token', result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -67,7 +83,7 @@ export class AuthController {
       path: '/',
     });
 
-    return { user };
+    return { verificationRequired: false, user: result.user };
   }
 
   @Post('logout')
