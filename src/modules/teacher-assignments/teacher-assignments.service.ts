@@ -33,6 +33,8 @@ import {
   positionKind,
   today,
 } from './teacher-assignments.helpers';
+import { ScheduleOverlapService } from '../schedules/schedule-overlap.service';
+import { Schedule } from '../schedules/entities/schedule.entity';
 
 type Draft = Omit<TeacherAssignment, 'id'>;
 
@@ -41,6 +43,7 @@ export class TeacherAssignmentsService {
   constructor(
     @InjectRepository(TeacherAssignment)
     private readonly repository: Repository<TeacherAssignment>,
+    private readonly scheduleOverlapService: ScheduleOverlapService,
   ) {}
 
   async create(dto: CreateTeacherAssignmentDto) {
@@ -120,7 +123,6 @@ export class TeacherAssignmentsService {
         positionTypeId: dto.positionTypeId ?? item.positionType.id,
         courseSectionSubjectId:
           dto.courseSectionSubjectId ?? item.courseSectionSubject.id,
-        // Se acepta null para sacar la referencia al cambiar de tipo de cargo.
         replacedAssignmentId:
           dto.replacedAssignmentId !== undefined
             ? dto.replacedAssignmentId
@@ -371,6 +373,35 @@ export class TeacherAssignmentsService {
         `the subject allows at most ${maxTeachers} teachers in this course section`,
       );
     }
+
+    // --- NUEVO: Validación de solapamiento horario (Módulo 3.2) ---
+    // Si el ECCD ya tiene horarios cargados, verificamos que el docente
+    // no choque con otras clases que ya tenga en esos mismos días/franjas.
+    const schedules = await this.repository.manager.find(Schedule, {
+      where: { courseSectionSubject: { id: draft.courseSectionSubject.id } },
+      relations: { day: true, classHour: true },
+    });
+
+    if (schedules.length > 0) {
+      for (const schedule of schedules) {
+        const conflicts = await this.scheduleOverlapService.checkOverlap({
+          idEccd: draft.courseSectionSubject.id,
+          idDia: schedule.day.id,
+          idHoraCatedra: schedule.classHour.id,
+          fechaDesde: startDate,
+          fechaHasta: endDate || null,
+          idDocente: draft.teacher.id, // <-- LÍNEA AGREGADA PARA FORZAR LA VALIDACIÓN
+        });
+
+        if (conflicts.length > 0) {
+          const c = conflicts[0];
+          throw new ConflictException(
+            `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada en el día ${schedule.day.name} (Horario existente ID: ${c.idHorarioExistente}).`,
+          );
+        }
+      }
+    }
+    // --- FIN NUEVO ---
   }
 
   private hasSubstitutes(id: number) {
