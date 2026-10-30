@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -11,6 +11,7 @@ import {
   requireText,
 } from '../../common/helpers';
 import { Degree } from '../degrees/entities/degrees.entity';
+import { Subject } from '../curriculum-subjects/entities/subject.entity';
 import { CreateStudyPlanDto } from './dto/create-study-plans.dto';
 import { UpdateStudyPlanDto } from './dto/update-study-plans.dto';
 import { StudyPlan } from './entities/study-plans.entity';
@@ -45,6 +46,7 @@ export class StudyPlanService {
         name: dto.name.trim(),
         endDate: dto.endDate ?? null,
         degree,
+        status: dto.status ?? 'ACTIVO',
       }),
     );
   }
@@ -82,7 +84,26 @@ export class StudyPlanService {
   }
 
   async remove(id: number) {
-    return this.repository.remove(await this.findOne(id));
+    const plan = await this.findOne(id);
+
+    if (plan.status === 'INACTIVO') {
+      throw new ConflictException('El plan ya se encuentra inactivo.');
+    }
+
+    // Regla RN-12: Verificar que no tenga materias (espacios curriculares) asignadas
+    const subjectsCount = await this.repository.manager.count(Subject, {
+      where: { studyPlan: { id } },
+    });
+
+    if (subjectsCount > 0) {
+      throw new ConflictException(
+        'No se puede archivar el plan porque tiene espacios curriculares (materias) asociados.',
+      );
+    }
+
+    // Baja lógica (RN-11): Solo cambiamos el estado a INACTIVO en lugar de borrar físicamente
+    plan.status = 'INACTIVO';
+    return this.repository.save(plan);
   }
 
   private validate(
