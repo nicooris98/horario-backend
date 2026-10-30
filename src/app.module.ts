@@ -19,6 +19,7 @@ import { TeachersModule } from './modules/teachers/teachers.module';
 import { PositionTypesModule } from './modules/position-types/position-types.module';
 import { TeacherAssignmentsModule } from './modules/teacher-assignments/teacher-assignments.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
+import { SchedulesModule } from './modules/schedules/schedules.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
     TeachersModule,
     PositionTypesModule,
     TeacherAssignmentsModule,
+    SchedulesModule,
   ],
   controllers: [],
   providers: [],

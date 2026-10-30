@@ -180,6 +180,11 @@ export class UsersService {
     }
 
     if (updateUserDto.password !== undefined) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new BadRequestException(
+          'La contraseña no se utiliza en producción',
+        );
+      }
       if (!user.password) {
         throw new BadRequestException(
           'La contraseña debe configurarse mediante el flujo de activación',
@@ -237,7 +242,6 @@ export class UsersService {
     manager: EntityManager,
     configuration: {
       email: string;
-      password: string;
       firstName: string;
       lastName: string;
     },
@@ -265,12 +269,12 @@ export class UsersService {
     let created = false;
 
     if (!user) {
-      const hashedPassword = await bcrypt.hash(configuration.password, 10);
       user = manager.create(User, {
         firstName: configuration.firstName,
         lastName: configuration.lastName,
         email: configuration.email,
-        password: hashedPassword,
+        password: null,
+        isActive: true,
         roles: [adminRole],
       });
       await manager.save(User, user);
@@ -285,10 +289,11 @@ export class UsersService {
       const roleAssigned = (user.roles ?? []).some(
         (role) => role.id === adminRole.id,
       );
+      user.password = null;
       if (!roleAssigned) {
         user.roles = [...(user.roles ?? []), adminRole];
-        await manager.save(User, user);
       }
+      await manager.save(User, user);
       return { created, roleAssigned: !roleAssigned };
     }
 

@@ -6,7 +6,6 @@ import { UsersService } from '../../users/users.service';
 
 export interface AdminSeedConfiguration {
   email: string;
-  password: string;
   firstName: string;
   lastName: string;
 }
@@ -22,21 +21,13 @@ export class AdminSeeder {
 
   getConfiguration(): AdminSeedConfiguration {
     const email = this.configService.get<string>('SEED_ADMIN_EMAIL')?.trim();
-    const password = this.configService.get<string>('SEED_ADMIN_PASSWORD');
 
     if (!email || !isEmail(email)) {
       throw new Error('SEED_ADMIN_EMAIL must be a valid email address');
     }
 
-    if (!password || password.length < 12) {
-      throw new Error(
-        'SEED_ADMIN_PASSWORD must contain at least 12 characters',
-      );
-    }
-
     return {
       email: email.toLowerCase(),
-      password,
       firstName:
         this.configService.get<string>('SEED_ADMIN_FIRST_NAME')?.trim() ||
         'Admin',
