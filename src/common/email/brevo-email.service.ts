@@ -95,6 +95,166 @@ ${activationUrl}
     }
   }
 
+
+  /** Mail de activación (botón/link). Remitente: BREVO_ACTIVATION_SENDER_*. No usar para OTP login. */
+  async sendAccountActivationEmail(email: string, code: string): Promise<void> {
+    const apiKey = this.configService.get<string>('BREVO_API_KEY');
+    const senderEmail = this.configService.get<string>(
+      'BREVO_ACTIVATION_SENDER_EMAIL',
+    );
+    const senderName = this.configService.get<string>(
+      'BREVO_ACTIVATION_SENDER_NAME',
+    );
+    
+    if (
+      !apiKey ||
+      !senderEmail ||
+      !isEmail(senderEmail) ||
+      !senderName?.trim()
+    ) {
+      this.logger.error(
+        'Brevo activation sender configuration is incomplete or invalid',
+      );
+      throw new ServiceUnavailableException(
+        'No se pudo enviar el correo de activación',
+      );
+    }
+
+    const activationUrl = this.getActivationUrl(email, code);
+    if (!activationUrl) {
+      this.logger.error(
+        'FRONTEND_URL is missing or invalid; cannot send activation link',
+      );
+      throw new ServiceUnavailableException(
+        'No se pudo enviar el correo de activación',
+      );
+    }
+
+    const safeUrl = this.escapeHtml(activationUrl);
+
+    const payload: BrevoEmailPayload = {
+      sender: { email: senderEmail, name: senderName.trim() },
+      to: [{ email }],
+      subject: 'Activá tu cuenta — Gestión de Horarios',
+      textContent: `¡Hola!
+
+Gracias por registrarte en nuestro sistema de gestión de horarios.
+
+Para completar tu registro y comenzar a utilizar la plataforma, activá tu cuenta con este enlace (vence en 10 minutos):
+${activationUrl}
+`,
+      htmlContent: this.buildActivationHtml(safeUrl),
+    };
+
+    try {
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'api-key': apiKey,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      if (!response.ok) {
+        this.logger.error(
+          `Brevo rejected activation email with HTTP ${response.status}`,
+        );
+        throw new ServiceUnavailableException(
+          'No se pudo enviar el correo de activación',
+        );
+      }
+    } catch (error) {
+      if (error instanceof ServiceUnavailableException) {
+        throw error;
+      }
+
+      this.logger.error('Brevo activation email request failed');
+      throw new ServiceUnavailableException(
+        'No se pudo enviar el correo de activación',
+      );
+    }
+  }  
+  
+  
+  /** Mail de activación aparte: (BREVO_SENDER_*), solo botón/link. */
+  async sendActivationButtonEmail(email: string, code: string): Promise<void> {
+    const apiKey = this.configService.get<string>('BREVO_API_KEY');
+    const senderEmail = this.configService.get<string>('BREVO_SENDER_EMAIL');
+    const senderName = this.configService.get<string>('BREVO_SENDER_NAME');
+
+    if (
+      !apiKey ||
+      !senderEmail ||
+      !isEmail(senderEmail) ||
+      !senderName?.trim()
+    ) {
+      this.logger.error('Brevo email configuration is incomplete or invalid');
+      throw new ServiceUnavailableException(
+        'No se pudo enviar el correo de activación',
+      );
+    }
+
+    const activationUrl = this.getActivationUrl(email, code);
+    if (!activationUrl) {
+      this.logger.error(
+        'FRONTEND_URL is missing or invalid; cannot send activation link',
+      );
+      throw new ServiceUnavailableException(
+        'No se pudo enviar el correo de activación',
+      );
+    }
+
+    const safeUrl = this.escapeHtml(activationUrl);
+
+    const payload: BrevoEmailPayload = {
+      sender: { email: senderEmail, name: senderName.trim() },
+      to: [{ email }],
+      subject: 'Activá tu cuenta — Gestión de Horarios',
+      textContent: `¡Hola!
+
+Para activar tu cuenta usá este enlace (vence en 10 minutos):
+${activationUrl}
+`,
+      htmlContent: this.buildActivationHtml(safeUrl),
+    };
+
+    try {
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'api-key': apiKey,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      if (!response.ok) {
+        this.logger.error(
+          `Brevo rejected activation button email with HTTP ${response.status}`,
+        );
+        throw new ServiceUnavailableException(
+          'No se pudo enviar el correo de activación',
+        );
+      }
+    } catch (error) {
+      if (error instanceof ServiceUnavailableException) {
+        throw error;
+      }
+      this.logger.error('Brevo activation button email request failed');
+      throw new ServiceUnavailableException(
+        'No se pudo enviar el correo de activación',
+      );
+    }
+  }
+  
+  
+  
+
   private buildActivationHtml(safeActivationUrl: string): string {
     return `<!DOCTYPE html>
 <html lang="es">
