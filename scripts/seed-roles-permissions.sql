@@ -26,9 +26,12 @@ INSERT INTO permissions (name, code) VALUES
     ('Ver usuarios',                'users.read'),
     ('Editar usuarios',             'users.update'),
     ('Eliminar usuarios',           'users.delete'),
-    ('Asignar rol a usuarios',      'users.assign_role')
+    ('Asignar rol a usuarios',      'users.assign_role'),
+    ('Crear planes de estudio',     'study-plans.create'),
+    ('Ver planes de estudio',       'study-plans.read'),
+    ('Editar planes de estudio',    'study-plans.update'),
+    ('Eliminar planes de estudio',  'study-plans.delete')
 ON CONFLICT DO NOTHING;
-
 -- ---------------------------------------------------------
 -- ROLES_PERMISSIONS
 -- ---------------------------------------------------------
