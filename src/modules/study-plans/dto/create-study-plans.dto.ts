@@ -1,4 +1,4 @@
-import { IsInt, IsDateString, IsOptional, IsString, Min, IsNumber } from 'class-validator';
+import { IsBoolean,IsInt, IsDateString, IsOptional, IsString, Min, IsNumber } from 'class-validator';
 
 export class CreateStudyPlanDto {
   @IsString()
@@ -26,4 +26,7 @@ export class CreateStudyPlanDto {
   @IsOptional()
   @IsString()
   status?: string;
+  @IsOptional()
+  @IsBoolean()
+  replaceCurrentVigente?: boolean;
 }
