@@ -1,10 +1,29 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { requireText } from '../../common/helpers';
 import { CreateDegreeDto } from './dto/create-degrees.dto';
 import { UpdateDegreeDto } from './dto/update-degrees.dto';
 import { Degree } from './entities/degrees.entity';
+
+function isForeignKeyViolation(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+
+  if ('code' in error && error.code === '23503') return true;
+
+  if (!('driverError' in error)) return false;
+  const driverError = error.driverError;
+  return (
+    typeof driverError === 'object' &&
+    driverError !== null &&
+    'code' in driverError &&
+    driverError.code === '23503'
+  );
+}
 
 @Injectable()
 export class DegreeService {
@@ -39,7 +58,16 @@ export class DegreeService {
 
   async remove(id: number) {
     const degree = await this.findOne(id);
-    await this.degreeRepository.remove(degree);
+    try {
+      await this.degreeRepository.remove(degree);
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new ConflictException(
+          'No se puede eliminar la carrera porque tiene planes de estudio asociados.',
+        );
+      }
+      throw error;
+    }
     return degree;
   }
 }
