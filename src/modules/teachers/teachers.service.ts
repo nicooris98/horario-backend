@@ -38,8 +38,13 @@ export class TeachersService {
   }
 
   findAll() {
-    return this.repository.find({ order: { id: 'ASC' } });
-  }
+  return this.repository.find({
+    order: {
+      lastName: 'ASC',
+      firstName: 'ASC',
+    },
+  });
+}
 
   async search(dni?: string, lastName?: string) {
     if (dni === undefined && lastName === undefined) return this.findAll();
