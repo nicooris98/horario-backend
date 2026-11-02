@@ -1,4 +1,4 @@
-import {
+﻿import {
   BadRequestException,
   Injectable,
   Logger,
@@ -68,7 +68,7 @@ export class UserActivationService {
   }
 
   async sendActivationCode(delivery: ActivationDelivery): Promise<void> {
-    await this.emailService.sendActivationCode(delivery.email, delivery.code);
+    this.emailService.sendActivationButtonEmail(delivery.email, delivery.code);
   }
 
   async verifyCode(
@@ -251,7 +251,7 @@ export class UserActivationService {
       });
 
       if (delivery) {
-        await this.sendActivationCode(delivery);
+        await this.emailService.sendActivationCode(delivery.email, delivery.code);
       }
     } catch (error) {
       if (!(error instanceof ServiceUnavailableException)) {

@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- =========================================================
 
 ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS is_disabled BOOLEAN NOT NULL DEFAULT FALSE;
     ALTER COLUMN password DROP NOT NULL;
 
 CREATE TABLE IF NOT EXISTS account_activation_challenges (
