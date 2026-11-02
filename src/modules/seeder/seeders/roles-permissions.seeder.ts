@@ -12,14 +12,22 @@ const permissions = [
   { name: 'Ver roles', code: 'roles.read' },
   { name: 'Editar/activar roles', code: 'roles.update' },
   { name: 'Asignar permisos a roles', code: 'roles.assign_permission' },
+
   { name: 'Crear permisos', code: 'permissions.create' },
   { name: 'Ver permisos', code: 'permissions.read' },
   { name: 'Editar permisos', code: 'permissions.update' },
+
   { name: 'Crear usuarios', code: 'users.create' },
   { name: 'Ver usuarios', code: 'users.read' },
   { name: 'Editar usuarios', code: 'users.update' },
   { name: 'Eliminar usuarios', code: 'users.delete' },
   { name: 'Asignar rol a usuarios', code: 'users.assign_role' },
+
+  { name: 'Crear planes de estudio', code: 'study-plans.create' },
+  { name: 'Ver planes de estudio', code: 'study-plans.read' },
+  { name: 'Editar planes de estudio', code: 'study-plans.update' },
+  { name: 'Eliminar planes de estudio', code: 'study-plans.delete' },
+
 ] as const;
 
 const rolePermissionCodes: Record<string, readonly string[]> = {

@@ -401,3 +401,17 @@ FROM (VALUES
 WHERE NOT EXISTS (
 	SELECT 1 FROM "tipo_cargo" t WHERE LOWER(t."nombre") = LOWER(v.nombre)
 );
+-- =========================================================
+-- MIGRACION: ESTADOS DE PLAN DE ESTUDIO
+-- ACTIVO -> NO_VIGENTE, INACTIVO -> ARCHIVADO
+-- Un solo plan vigente por carrera
+-- =========================================================
+UPDATE plan_estudio SET estado = 'NO_VIGENTE' WHERE estado = 'ACTIVO';
+UPDATE plan_estudio SET estado = 'ARCHIVADO' WHERE estado = 'INACTIVO';
+
+ALTER TABLE plan_estudio ALTER COLUMN estado SET DEFAULT 'NO_VIGENTE';
+
+-- Un solo plan vigente por carrera
+CREATE UNIQUE INDEX IF NOT EXISTS uq_plan_estudio_vigente_por_carrera
+ON plan_estudio (id_carrera)
+WHERE estado = 'VIGENTE';
