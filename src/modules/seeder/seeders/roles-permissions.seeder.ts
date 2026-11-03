@@ -28,6 +28,11 @@ const permissions = [
   { name: 'Editar planes de estudio', code: 'study-plans.update' },
   { name: 'Eliminar planes de estudio', code: 'study-plans.delete' },
 
+  { name: 'Crear materias', code: 'subjects.create' },
+  { name: 'Ver materias', code: 'subjects.read' },
+  { name: 'Editar materias', code: 'subjects.update' },
+  { name: 'Eliminar materias', code: 'subjects.delete' },
+
 ] as const;
 
 const rolePermissionCodes: Record<string, readonly string[]> = {
