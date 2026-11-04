@@ -47,12 +47,19 @@ export class TeachersService {
 }
 
   async search(dni?: string, lastName?: string) {
-    if (dni === undefined && lastName === undefined) return this.findAll();
+    if (!dni?.trim() && !lastName?.trim()) {
+  return this.findAll();
+}
 
     const where: FindOptionsWhere<Teacher> = {};
-    if (dni !== undefined) where.dni = this.cleanDni(dni);
-    if (lastName !== undefined) {
-      where.lastName = ILike(`%${requireText(lastName, 'lastName')}%`);
+
+    if (dni?.trim()) {
+      const partialDni = dni.replace(/[.\s]/g, '');
+      where.dni = ILike(`${partialDni}%`);
+    }
+
+    if (lastName?.trim()) {
+      where.lastName = ILike(`%${lastName.trim()}%`);
     }
 
     const found = await this.repository.find({
