@@ -9,6 +9,7 @@ import { requireText } from '../../common/helpers';
 import { CreateDegreeDto } from './dto/create-degrees.dto';
 import { UpdateDegreeDto } from './dto/update-degrees.dto';
 import { Degree } from './entities/degrees.entity';
+import { UpdateDegreeStatusDto } from './dto/update-degrees.dto';
 
 function isForeignKeyViolation(error: unknown): boolean {
   if (typeof error !== 'object' || error === null) return false;
@@ -56,18 +57,25 @@ export class DegreeService {
     return this.degreeRepository.save(degree);
   }
 
+  async updateStatus(id: number, dto: UpdateDegreeStatusDto) {
+    const degree = await this.findOne(id);
+
+    if (degree.status === dto.status) {
+      return degree;
+    }
+
+    degree.status = dto.status;
+    return this.degreeRepository.save(degree);
+  }
+
   async remove(id: number) {
     const degree = await this.findOne(id);
-    try {
-      await this.degreeRepository.remove(degree);
-    } catch (error) {
-      if (isForeignKeyViolation(error)) {
-        throw new ConflictException(
-          'No se puede eliminar la carrera porque tiene planes de estudio asociados.',
-        );
-      }
-      throw error;
+
+    if (degree.status === 'INACTIVO') {
+    throw new ConflictException('La carrera ya se encuentra inactiva');
     }
-    return degree;
+
+    degree.status = 'INACTIVO';
+    return this.degreeRepository.save(degree);
   }
 }
