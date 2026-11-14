@@ -1,10 +1,35 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   EntityManager,
   EntityTarget,
   FindOptionsWhere,
   ObjectLiteral,
+  QueryFailedError,
+  Repository,
 } from 'typeorm';
+
+const FOREIGN_KEY_VIOLATION = '23503';
+
+export async function removeOrConflict<T extends ObjectLiteral>(
+  repository: Repository<T>,
+  item: T,
+  inUseMessage: string,
+) {
+  try {
+    return await repository.remove(item);
+  } catch (error) {
+    const code = (error as { driverError?: { code?: string } }).driverError
+      ?.code;
+    if (error instanceof QueryFailedError && code === FOREIGN_KEY_VIOLATION) {
+      throw new ConflictException(inUseMessage);
+    }
+    throw error;
+  }
+}
 
 export function requireText(value: unknown, field: string) {
   if (typeof value !== 'string' || !value.trim()) {
@@ -27,8 +52,15 @@ export function requirePositive(value: unknown, field: string) {
   return value as number;
 }
 
-export function optionalStatus(value: unknown) {
-  if (value !== undefined) requireText(value, 'status');
+export function deactivate<T extends { status: string | null }>(
+  item: T,
+  alreadyInactiveMessage: string,
+) {
+  if (item.status === 'INACTIVO') {
+    throw new ConflictException(alreadyInactiveMessage);
+  }
+  item.status = 'INACTIVO';
+  return item;
 }
 
 export function parseDate(value: string, field: string) {

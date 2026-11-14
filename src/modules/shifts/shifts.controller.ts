@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { UpdateStatusDto } from '../../common/dto/update-status.dto';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { ShiftsService } from './shifts.service';
@@ -34,6 +35,14 @@ export class ShiftsController {
   @Patch(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateShiftDto) {
     return this.service.update(id, dto);
+  }
+
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateStatusDto,
+  ) {
+    return this.service.updateStatus(id, dto);
   }
 
   @Delete(':id')
