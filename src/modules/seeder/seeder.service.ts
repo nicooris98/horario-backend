@@ -1,24 +1,20 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
-import { UsersService } from '../users/users.service';
 import { AdminSeeder } from './seeders/admin.seeder';
+import { RolesPermissionsSeeder } from './seeders/roles-permissions.seeder';
 
-@Injectable()
-export class SeederService implements OnModuleInit {
+export class SeederService {
   constructor(
     private readonly dataSource: DataSource,
-    private readonly usersService: UsersService,
-    private readonly configService: ConfigService,
+    private readonly adminSeeder: AdminSeeder,
+    private readonly rolesPermissionsSeeder: RolesPermissionsSeeder,
   ) {}
 
-  async onModuleInit() {
-    const adminSeeder = new AdminSeeder(
-      this.dataSource,
-      this.usersService,
-      this.configService,
-    );
+  async run(): Promise<void> {
+    const adminConfiguration = this.adminSeeder.getConfiguration();
 
-    await adminSeeder.run();
+    await this.dataSource.transaction(async (manager) => {
+      await this.rolesPermissionsSeeder.run(manager);
+      await this.adminSeeder.run(manager, adminConfiguration);
+    });
   }
 }

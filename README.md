@@ -31,6 +31,125 @@
 $ pnpm install
 ```
 
+## Initial roles, permissions, and administrator
+
+The initial data seed is an explicit command; it does not run when the API
+starts. Configure these values in `.env` before running it:
+
+```env
+SEED_ADMIN_EMAIL=your-admin-email@example.com
+SEED_ADMIN_FIRST_NAME=Admin
+SEED_ADMIN_LAST_NAME=Sistema
+```
+
+Then run:
+
+```bash
+pnpm run seed:initial-data
+```
+
+The command creates missing initial roles and permissions, adds their declared
+role-permission links without removing existing links, and creates or assigns
+the `admin` role only to the account identified by `SEED_ADMIN_EMAIL`. The
+account is stored without a password. If it already exists, its password is
+cleared and its personal details are not changed. Outside production, that
+email opens the dashboard directly. In production nobody signs in with a
+password: every account, including the administrator, receives a verification
+code. All seed operations run in one database transaction and fail if the
+admin email is missing or invalid. Do not run this command against production
+without explicit authorization.
+
+## Account activation by email
+
+New users created through `POST /auth/register` or `POST /users` remain inactive
+until they enter the one-time code sent through Brevo. Configure the following
+variables in `.env`:
+
+```env
+BREVO_API_KEY=your-brevo-api-key
+BREVO_SENDER_EMAIL=verified-sender@example.com
+BREVO_SENDER_NAME=SAHD
+FRONTEND_URL=http://localhost:4200
+ACTIVATION_OTP_SECRET=generate-a-random-secret-with-at-least-32-characters
+```
+
+The administrator endpoint accepts identity and optional role IDs without a
+password:
+
+```json
+{
+  "first_name": "Ana",
+  "last_name": "Pérez",
+  "email": "ana@example.com",
+  "role_ids": [2]
+}
+```
+
+`FRONTEND_URL` is optional. When configured, the email links to
+`/activate-account?email=...&code=...`; Angular's future activation view must
+implement that route. Before starting the updated backend, execute the
+"ACTIVACION DE CUENTAS Y CONFIGURACION INICIAL DE CONTRASENA" section in
+`scripts/script_horario.sql` against the backend database. That SQL section is
+idempotent and can be run against the current database without deleting users
+or existing activation challenges. The rest of the schema script is not needed
+for this update. In pgAdmin, open the file, select the activation section, and
+execute it. It also removes only the obsolete TypeORM migration-history rows
+for this activation schema, if that history table exists. For a new database,
+execute the complete schema script.
+
+Verify a code with `POST /auth/activation/verify-code`:
+
+```json
+{ "email": "user@example.com", "code": "012345" }
+```
+
+For accounts created by an administrator without a password, the response
+contains a short-lived one-use `passwordSetupToken`:
+
+```json
+{
+  "message": "Correo verificado correctamente",
+  "requiresPassword": true,
+  "passwordSetupToken": "<temporary-token>"
+}
+```
+
+Set the user's password with `POST /auth/activation/set-password`:
+
+```json
+{
+  "token": "<temporary-token>",
+  "password": "a-strong-password",
+  "passwordConfirmation": "a-strong-password"
+}
+```
+
+The token expires after 15 minutes and is invalidated when used. Users who
+already supplied a password during public registration do not receive this
+temporary token. In production, `POST /auth/activation/set-password` is
+rejected. Administrators cannot use `PATCH /users/:id` to set a password for a
+passwordless account; its initial password must be set with this activation
+token.
+
+Start a session or send a code with `POST /auth/login`:
+
+```json
+{ "email": "user@example.com" }
+```
+
+Outside production, the email configured in `SEED_ADMIN_EMAIL` receives a
+session cookie and `{ "verificationRequired": false }`. Every other account,
+and every account in production, receives a verification code and
+`{ "verificationRequired": true }`. That response is deliberately generic and
+does not disclose whether the account exists. The same endpoint sends a new
+code from the verification screen. Codes expire after 10 minutes, are
+single-use, allow at most five verification attempts, and are limited to five
+sends per hour with a one-minute cooldown. A failed initial delivery leaves the
+account pending; retry through `POST /auth/login` rather than creating that
+user again. The activation schema is managed by the SQL script and is not
+applied automatically at application startup. The SQL preserves all existing
+password values.
+
 ## Compile and run the project
 
 ```bash

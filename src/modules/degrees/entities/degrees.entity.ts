@@ -9,6 +9,9 @@ export class Degree {
   @Column({ name: 'nombre' })
   name: string;
 
+  @Column({ name: 'estado', default: 'ACTIVO' })
+  status: string;
+
   @OneToMany(() => StudyPlan, (studyPlan) => studyPlan.degree)
   studyPlans: StudyPlan[];
 }

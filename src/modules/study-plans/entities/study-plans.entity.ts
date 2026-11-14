@@ -1,3 +1,4 @@
+
 import {
   Column,
   Entity,
@@ -9,7 +10,7 @@ import {
 import { Degree } from '../../degrees/entities/degrees.entity';
 import { Subject } from '../../curriculum-subjects/entities/subject.entity';
 import { StudyPlanAcademicCycle } from '../../study-plan-academic-cycles/entities/study-plan-academic-cycle.entity';
-
+import { STUDY_PLAN_STATUS } from '../study-plan-status';
 @Entity('plan_estudio')
 export class StudyPlan {
   @PrimaryGeneratedColumn({ name: 'id_plan_estudio' })
@@ -34,7 +35,7 @@ export class StudyPlan {
   @Column({ name: 'fecha_hasta', type: 'date', nullable: true })
   endDate: string | null;
 
-  @Column({ name: 'estado', default: 'ACTIVO' })
+  @Column({ name: 'estado', default: STUDY_PLAN_STATUS.NO_VIGENTE })
   status: string;
 
   @Column({

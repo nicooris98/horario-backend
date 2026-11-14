@@ -44,8 +44,9 @@ export class User extends AuditEntity {
     name: 'password',
     type: 'varchar',
     length: 255,
+    nullable: true,
   })
-  password: string;
+  password: string | null;
 
   @Column({
     name: 'is_active',
