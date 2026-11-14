@@ -1,4 +1,8 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   EntityManager,
   EntityTarget,
@@ -27,8 +31,15 @@ export function requirePositive(value: unknown, field: string) {
   return value as number;
 }
 
-export function optionalStatus(value: unknown) {
-  if (value !== undefined) requireText(value, 'status');
+export function deactivate<T extends { status: string | null }>(
+  item: T,
+  alreadyInactiveMessage: string,
+) {
+  if (item.status === 'INACTIVO') {
+    throw new ConflictException(alreadyInactiveMessage);
+  }
+  item.status = 'INACTIVO';
+  return item;
 }
 
 export function parseDate(value: string, field: string) {

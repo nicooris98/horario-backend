@@ -2,18 +2,19 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
+  deactivate,
   findRef,
-  optionalStatus,
   pick,
   requireInt,
   requireText,
 } from '../../common/helpers';
+import { UpdateStatusDto } from '../../common/dto/update-status.dto';
 import { StudyPlanAcademicCycle } from '../study-plan-academic-cycles/entities/study-plan-academic-cycle.entity';
 import { CreateCourseSectionDto } from './dto/create-course-section.dto';
 import { UpdateCourseSectionDto } from './dto/update-course-section.dto';
 import { CourseSection } from './entities/course-section.entity';
 
-const FIELDS = ['courseYear', 'section', 'status'] as const;
+const FIELDS = ['courseYear', 'section'] as const;
 const RELATIONS = {
   studyPlanAcademicCycle: { studyPlan: true, academicCycle: true, shift: true },
 };
@@ -31,6 +32,7 @@ export class CourseSectionsService {
       this.repository.create({
         ...pick(dto, [...FIELDS]),
         section: dto.section.trim(),
+        status: 'ACTIVO',
         studyPlanAcademicCycle: await this.findCycle(
           dto.studyPlanAcademicCycleId,
         ),
@@ -64,8 +66,17 @@ export class CourseSectionsService {
     return this.repository.save(item);
   }
 
+  async updateStatus(id: number, dto: UpdateStatusDto) {
+    const item = await this.findOne(id);
+    item.status = dto.status;
+    return this.repository.save(item);
+  }
+
   async remove(id: number) {
-    return this.repository.remove(await this.findOne(id));
+    const item = await this.findOne(id);
+    return this.repository.save(
+      deactivate(item, 'El curso/división ya se encuentra inactivo'),
+    );
   }
 
   private findCycle(id: number) {
@@ -77,11 +88,8 @@ export class CourseSectionsService {
     );
   }
 
-  private validate(
-    s: Pick<CourseSection, 'courseYear' | 'section'> & { status?: string },
-  ) {
+  private validate(s: Pick<CourseSection, 'courseYear' | 'section'>) {
     requireInt(s.courseYear, 'courseYear');
     requireText(s.section, 'section');
-    optionalStatus(s.status);
   }
 }

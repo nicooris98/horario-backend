@@ -1,4 +1,4 @@
-import { IsIn, IsInt, IsOptional, Matches, Min } from 'class-validator';
+import { IsInt, Matches, Min } from 'class-validator';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -12,8 +12,4 @@ export class CreateAcademicCycleDto {
 
   @Matches(DATE, { message: 'endDate must use the YYYY-MM-DD format' })
   endDate: string;
-
-  @IsOptional()
-  @IsIn(['ACTIVO', 'INACTIVO'])
-  status?: string;
 }

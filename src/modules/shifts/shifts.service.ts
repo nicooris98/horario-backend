@@ -2,16 +2,17 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
-  optionalStatus,
+  deactivate,
   pick,
   requireText,
   requireTimeOrder,
 } from '../../common/helpers';
+import { UpdateStatusDto } from '../../common/dto/update-status.dto';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { UpdateShiftDto } from './dto/update-shift.dto';
 import { Shift } from './entities/shift.entity';
 
-const FIELDS = ['name', 'startTime', 'endTime', 'status'] as const;
+const FIELDS = ['name', 'startTime', 'endTime'] as const;
 
 @Injectable()
 export class ShiftsService {
@@ -22,7 +23,11 @@ export class ShiftsService {
   create(dto: CreateShiftDto) {
     this.validate(dto);
     return this.repository.save(
-      this.repository.create({ ...pick(dto, [...FIELDS]), name: dto.name.trim() }),
+      this.repository.create({
+        ...pick(dto, [...FIELDS]),
+        name: dto.name.trim(),
+        status: 'ACTIVO',
+      }),
     );
   }
 
@@ -44,13 +49,21 @@ export class ShiftsService {
     return this.repository.save(item);
   }
 
+  async updateStatus(id: number, dto: UpdateStatusDto) {
+    const item = await this.findOne(id);
+    item.status = dto.status;
+    return this.repository.save(item);
+  }
+
   async remove(id: number) {
-    return this.repository.remove(await this.findOne(id));
+    const item = await this.findOne(id);
+    return this.repository.save(
+      deactivate(item, 'El turno ya se encuentra inactivo'),
+    );
   }
 
   private validate(s: CreateShiftDto) {
     requireText(s.name, 'name');
     requireTimeOrder(s.startTime, s.endTime);
-    optionalStatus(s.status);
   }
 }

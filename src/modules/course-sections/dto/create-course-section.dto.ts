@@ -1,12 +1,4 @@
-import {
-  IsIn,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import { IsInt, IsNotEmpty, IsString, MaxLength, Min } from 'class-validator';
 
 export class CreateCourseSectionDto {
   @IsInt()
@@ -21,8 +13,4 @@ export class CreateCourseSectionDto {
   @IsNotEmpty()
   @MaxLength(255)
   section: string;
-
-  @IsOptional()
-  @IsIn(['ACTIVO', 'INACTIVO'])
-  status?: string;
 }
