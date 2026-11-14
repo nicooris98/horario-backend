@@ -418,3 +418,12 @@ ALTER TABLE plan_estudio ALTER COLUMN estado SET DEFAULT 'NO_VIGENTE';
 CREATE UNIQUE INDEX IF NOT EXISTS uq_plan_estudio_vigente_por_carrera
 ON plan_estudio (id_carrera)
 WHERE estado = 'VIGENTE';
+
+-- =========================================================
+-- MIGRACION: FK OBLIGATORIAS DEL MÓDULO 1
+-- Un plan por ciclo lectivo y un curso/división no existen sin sus padres
+-- =========================================================
+ALTER TABLE "plan_estudio_ciclo_lectivo" ALTER COLUMN "id_plan_estudio" SET NOT NULL;
+ALTER TABLE "plan_estudio_ciclo_lectivo" ALTER COLUMN "id_ciclo_lectivo" SET NOT NULL;
+ALTER TABLE "plan_estudio_ciclo_lectivo" ALTER COLUMN "id_turno" SET NOT NULL;
+ALTER TABLE "curso_division" ALTER COLUMN "id_plan_estudio_ciclo_lectivo" SET NOT NULL;

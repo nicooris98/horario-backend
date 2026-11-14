@@ -8,7 +8,28 @@ import {
   EntityTarget,
   FindOptionsWhere,
   ObjectLiteral,
+  QueryFailedError,
+  Repository,
 } from 'typeorm';
+
+const FOREIGN_KEY_VIOLATION = '23503';
+
+export async function removeOrConflict<T extends ObjectLiteral>(
+  repository: Repository<T>,
+  item: T,
+  inUseMessage: string,
+) {
+  try {
+    return await repository.remove(item);
+  } catch (error) {
+    const code = (error as { driverError?: { code?: string } }).driverError
+      ?.code;
+    if (error instanceof QueryFailedError && code === FOREIGN_KEY_VIOLATION) {
+      throw new ConflictException(inUseMessage);
+    }
+    throw error;
+  }
+}
 
 export function requireText(value: unknown, field: string) {
   if (typeof value !== 'string' || !value.trim()) {

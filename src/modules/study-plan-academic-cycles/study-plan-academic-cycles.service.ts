@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { findRef } from '../../common/helpers';
+import { findRef, removeOrConflict } from '../../common/helpers';
 import { AcademicCycle } from '../academic-cycles/entities/academic-cycle.entity';
 import { Shift } from '../shifts/entities/shift.entity';
 import { StudyPlan } from '../study-plans/entities/study-plans.entity';
@@ -46,7 +46,11 @@ export class StudyPlanAcademicCyclesService {
   }
 
   async remove(id: number) {
-    return this.repository.remove(await this.findOne(id));
+    return removeOrConflict(
+      this.repository,
+      await this.findOne(id),
+      'El plan por ciclo lectivo tiene cursos/división asociados y no se puede eliminar',
+    );
   }
 
   private async assignRefs(

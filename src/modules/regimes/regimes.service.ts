@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { requireText } from '../../common/helpers';
+import { removeOrConflict, requireText } from '../../common/helpers';
 import { CreateRegimeDto } from './dto/create-regime.dto';
 import { UpdateRegimeDto } from './dto/update-regime.dto';
 import { Regime } from './entities/regime.entity';
@@ -35,6 +35,10 @@ export class RegimesService {
   }
 
   async remove(id: number) {
-    return this.repository.remove(await this.findOne(id));
+    return removeOrConflict(
+      this.repository,
+      await this.findOne(id),
+      'El régimen está en uso por materias y no se puede eliminar',
+    );
   }
 }

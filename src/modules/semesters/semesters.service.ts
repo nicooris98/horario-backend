@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   pick,
+  removeOrConflict,
   requireDateOrder,
   requireInt,
   requireText,
@@ -46,7 +47,11 @@ export class SemestersService {
   }
 
   async remove(id: number) {
-    return this.repository.remove(await this.findOne(id));
+    return removeOrConflict(
+      this.repository,
+      await this.findOne(id),
+      'El cuatrimestre está en uso por horarios y no se puede eliminar',
+    );
   }
 
   private validate(s: CreateSemesterDto) {
