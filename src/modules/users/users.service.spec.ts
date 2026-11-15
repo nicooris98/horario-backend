@@ -7,6 +7,7 @@ import { EntityManager, Repository } from 'typeorm';
 import { RolesService } from '../roles/roles.service';
 import { PermissionsService } from '../permissions/permissions.service';
 import { UsersService } from './users.service';
+import { UserActivationService } from './activation/user-activation.service';
 import { User } from './entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
 
@@ -55,9 +56,14 @@ describe('UsersService - asignación de roles', () => {
     },
   };
   const roleRepository = { findBy: jest.fn() };
+  const activationService = {
+    createInitialChallenge: jest.fn().mockResolvedValue({}),
+    sendActivationCode: jest.fn().mockResolvedValue(undefined),
+  };
   const service = new UsersService(
     userRepository as unknown as Repository<User>,
     roleRepository as unknown as Repository<Role>,
+    activationService as unknown as UserActivationService,
   );
 
   const createDto = {
@@ -312,6 +318,10 @@ describe('Concurrencia entre asignacion y desactivacion de roles', () => {
     const usersService = new UsersService(
       userRepository as unknown as Repository<User>,
       {} as Repository<Role>,
+      {
+        createInitialChallenge: jest.fn().mockResolvedValue({}),
+        sendActivationCode: jest.fn().mockResolvedValue(undefined),
+      } as unknown as UserActivationService,
     );
     const rolesService = new RolesService(
       { manager: { transaction: db.transaction } } as unknown as Repository<Role>,
@@ -349,6 +359,10 @@ describe('Concurrencia entre asignacion y desactivacion de roles', () => {
         manager: { transaction: db.transaction },
       } as unknown as Repository<User>,
       {} as Repository<Role>,
+      {
+        createInitialChallenge: jest.fn().mockResolvedValue({}),
+        sendActivationCode: jest.fn().mockResolvedValue(undefined),
+      } as unknown as UserActivationService,
     );
     const rolesService = new RolesService(
       { manager: { transaction: db.transaction } } as unknown as Repository<Role>,

@@ -15,7 +15,6 @@ describe('DegreeService', () => {
     save: jest.fn(),
     find: jest.fn(),
     findOneBy: jest.fn(),
-    remove: jest.fn(),
   };
   const service = new DegreeService(
     degreeRepository as unknown as Repository<Degree>,
@@ -124,48 +123,36 @@ describe('DegreeService', () => {
   });
 
   describe('remove', () => {
-    it('elimina y devuelve una carrera sin planes asociados', async () => {
-      const degree = { id: 1, name: 'Ingeniería' };
+    it('marca la carrera como INACTIVO y la devuelve', async () => {
+      const degree = { id: 1, name: 'Ingeniería', status: 'ACTIVO' };
       degreeRepository.findOneBy.mockResolvedValue(degree);
-      degreeRepository.remove.mockResolvedValue(degree);
+      degreeRepository.save.mockImplementation((savedDegree) =>
+        Promise.resolve(savedDegree),
+      );
 
-      await expect(service.remove(1)).resolves.toBe(degree);
-      expect(degreeRepository.remove).toHaveBeenCalledWith(degree);
+      const result = await service.remove(1);
+
+      expect(degree.status).toBe('INACTIVO');
+      expect(degreeRepository.save).toHaveBeenCalledWith(degree);
+      expect(result).toBe(degree);
     });
 
     it('lanza NotFoundException si la carrera no existe', async () => {
       degreeRepository.findOneBy.mockResolvedValue(null);
 
       await expect(service.remove(99)).rejects.toThrow(NotFoundException);
-      expect(degreeRepository.remove).not.toHaveBeenCalled();
+      expect(degreeRepository.save).not.toHaveBeenCalled();
     });
 
-    it('convierte una violación FK en ConflictException con el mensaje acordado', async () => {
-      const degree = { id: 1, name: 'Ingeniería' };
-      degreeRepository.findOneBy.mockResolvedValue(degree);
-      degreeRepository.remove.mockRejectedValue({
-        driverError: { code: '23503' },
+    it('lanza ConflictException si la carrera ya está inactiva', async () => {
+      degreeRepository.findOneBy.mockResolvedValue({
+        id: 1,
+        name: 'Ingeniería',
+        status: 'INACTIVO',
       });
 
-      const error: unknown = await service.remove(1).then(
-        () => null,
-        (rejection: unknown) => rejection,
-      );
-      expect(error).toBeInstanceOf(ConflictException);
-      expect(error).toHaveProperty('status', 409);
-      expect(error).toHaveProperty(
-        'message',
-        'No se puede eliminar la carrera porque tiene planes de estudio asociados.',
-      );
-    });
-
-    it('propaga errores que no son violaciones FK sin modificarlos', async () => {
-      const degree = { id: 1, name: 'Ingeniería' };
-      const error = new Error('database unavailable');
-      degreeRepository.findOneBy.mockResolvedValue(degree);
-      degreeRepository.remove.mockRejectedValue(error);
-
-      await expect(service.remove(1)).rejects.toBe(error);
+      await expect(service.remove(1)).rejects.toThrow(ConflictException);
+      expect(degreeRepository.save).not.toHaveBeenCalled();
     });
   });
 });
