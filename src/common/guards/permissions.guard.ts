@@ -32,7 +32,7 @@ export class PermissionsGuard implements CanActivate {
       | User
       | undefined;
 
-    if (!requestUser || !requestUser.isActive) {
+    if (!requestUser) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
@@ -42,6 +42,10 @@ export class PermissionsGuard implements CanActivate {
       where: { id: requestUser.id },
       relations: { roles: { permissions: true } },
     });
+
+    if (!user?.isActive) {
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
 
     // Solo cuentan los permisos de los roles ACTIVOS
     const userPermissions = (user?.roles ?? [])

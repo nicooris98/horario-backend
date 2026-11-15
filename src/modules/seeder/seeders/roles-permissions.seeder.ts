@@ -38,6 +38,82 @@ const permissions = [
   { name: 'Editar carreras', code: 'degrees.update' },
   { name: 'Eliminar carreras', code: 'degrees.delete' },
 
+  { name: 'Crear ciclos lectivos', code: 'academic-cycles.create' },
+  { name: 'Ver ciclos lectivos', code: 'academic-cycles.read' },
+  { name: 'Editar ciclos lectivos', code: 'academic-cycles.update' },
+  { name: 'Eliminar ciclos lectivos', code: 'academic-cycles.delete' },
+
+  { name: 'Crear horas cátedra', code: 'class-hours.create' },
+  { name: 'Ver horas cátedra', code: 'class-hours.read' },
+  { name: 'Editar horas cátedra', code: 'class-hours.update' },
+  { name: 'Eliminar horas cátedra', code: 'class-hours.delete' },
+
+  { name: 'Crear cursos/división', code: 'course-sections.create' },
+  { name: 'Ver cursos/división', code: 'course-sections.read' },
+  { name: 'Editar cursos/división', code: 'course-sections.update' },
+  { name: 'Eliminar cursos/división', code: 'course-sections.delete' },
+
+  { name: 'Crear tipos de cargo', code: 'position-types.create' },
+  { name: 'Ver tipos de cargo', code: 'position-types.read' },
+  { name: 'Editar tipos de cargo', code: 'position-types.update' },
+  { name: 'Eliminar tipos de cargo', code: 'position-types.delete' },
+
+  { name: 'Crear regímenes', code: 'regimes.create' },
+  { name: 'Ver regímenes', code: 'regimes.read' },
+  { name: 'Editar regímenes', code: 'regimes.update' },
+  { name: 'Eliminar regímenes', code: 'regimes.delete' },
+
+  { name: 'Crear horarios', code: 'schedules.create' },
+  { name: 'Ver horarios', code: 'schedules.read' },
+  { name: 'Editar horarios', code: 'schedules.update' },
+  { name: 'Eliminar horarios', code: 'schedules.delete' },
+
+  { name: 'Crear cuatrimestres', code: 'semesters.create' },
+  { name: 'Ver cuatrimestres', code: 'semesters.read' },
+  { name: 'Editar cuatrimestres', code: 'semesters.update' },
+  { name: 'Eliminar cuatrimestres', code: 'semesters.delete' },
+
+  { name: 'Crear turnos', code: 'shifts.create' },
+  { name: 'Ver turnos', code: 'shifts.read' },
+  { name: 'Editar turnos', code: 'shifts.update' },
+  { name: 'Eliminar turnos', code: 'shifts.delete' },
+
+  {
+    name: 'Crear planes por ciclo lectivo',
+    code: 'study-plan-academic-cycles.create',
+  },
+  {
+    name: 'Ver planes por ciclo lectivo',
+    code: 'study-plan-academic-cycles.read',
+  },
+  {
+    name: 'Editar planes por ciclo lectivo',
+    code: 'study-plan-academic-cycles.update',
+  },
+  {
+    name: 'Eliminar planes por ciclo lectivo',
+    code: 'study-plan-academic-cycles.delete',
+  },
+
+  {
+    name: 'Crear asignaciones docentes',
+    code: 'teacher-assignments.create',
+  },
+  { name: 'Ver asignaciones docentes', code: 'teacher-assignments.read' },
+  {
+    name: 'Editar asignaciones docentes',
+    code: 'teacher-assignments.update',
+  },
+  {
+    name: 'Eliminar asignaciones docentes',
+    code: 'teacher-assignments.delete',
+  },
+
+  { name: 'Crear docentes', code: 'teachers.create' },
+  { name: 'Ver docentes', code: 'teachers.read' },
+  { name: 'Editar docentes', code: 'teachers.update' },
+  { name: 'Eliminar docentes', code: 'teachers.delete' },
+
 ] as const;
 
 const rolePermissionCodes: Record<string, readonly string[]> = {
