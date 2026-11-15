@@ -428,3 +428,20 @@ ALTER TABLE "plan_estudio_ciclo_lectivo" ALTER COLUMN "id_plan_estudio" SET NOT 
 ALTER TABLE "plan_estudio_ciclo_lectivo" ALTER COLUMN "id_ciclo_lectivo" SET NOT NULL;
 ALTER TABLE "plan_estudio_ciclo_lectivo" ALTER COLUMN "id_turno" SET NOT NULL;
 ALTER TABLE "curso_division" ALTER COLUMN "id_plan_estudio_ciclo_lectivo" SET NOT NULL;
+
+-- =========================================================
+-- MIGRACION: DEFAULT 'ACTIVO' EN COLUMNAS ESTADO
+-- Sin DEFAULT, un insert que no setee estado queda en NULL
+-- =========================================================
+ALTER TABLE "ciclo_lectivo" ALTER COLUMN "estado" SET DEFAULT 'ACTIVO';
+ALTER TABLE "turno" ALTER COLUMN "estado" SET DEFAULT 'ACTIVO';
+ALTER TABLE "espacio_curricular" ALTER COLUMN "estado" SET DEFAULT 'ACTIVO';
+ALTER TABLE "curso_division" ALTER COLUMN "estado" SET DEFAULT 'ACTIVO';
+ALTER TABLE "espacio_curricular_curso_division" ALTER COLUMN "estado" SET DEFAULT 'ACTIVO';
+
+-- =========================================================
+-- MIGRACION: UNICIDAD plan_estudio_ciclo_lectivo
+-- Un plan de estudio solo puede vincularse una vez por ciclo y turno
+-- =========================================================
+CREATE UNIQUE INDEX IF NOT EXISTS uq_plan_estudio_ciclo_lectivo
+ON "plan_estudio_ciclo_lectivo" ("id_plan_estudio", "id_ciclo_lectivo", "id_turno");
