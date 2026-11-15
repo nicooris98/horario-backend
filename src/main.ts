@@ -6,6 +6,8 @@ import cookieParser from 'cookie-parser';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.use(cookieParser());
+
   app.enableCors({
     origin: process.env.FRONTEND_URL ?? 'http://localhost:4200',
     credentials: true,
@@ -26,14 +28,17 @@ async function bootstrap() {
     .setTitle('Horarios API')
     .setDescription('Documentación de la API de gestión de horarios')
     .setVersion('1.0')
-    .addBearerAuth()
+    .addCookieAuth('access_token', {
+      type: 'apiKey',
+      in: 'cookie',
+      description:
+        'Token JWT enviado automáticamente por el backend en la cookie httpOnly `access_token` tras el login.',
+    })
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
 
   SwaggerModule.setup('api/docs', app, document);
-
-  app.use(cookieParser());
 
   await app.listen(process.env.PORT ?? 3000);
 }
