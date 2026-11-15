@@ -13,7 +13,7 @@ El frontend es otro proyecto y se explica en su propio README.
 
 ```bash
 corepack enable
-corepack prepare pnpm@10.28.1 --activate
+corepack prepare pnpm@12.3.4 --activate
 ```
 
 3. [Docker Desktop](https://www.docker.com/products/docker-desktop/). Tiene que estar abierto antes de levantar la base.
@@ -123,7 +123,7 @@ Borra el contenedor y también los datos. Después hay que volver a cargar el es
 
 ### 4. Cargar el esquema
 
-La API no crea las tablas al arrancar (`synchronize` está apagado). Hay que ejecutar una vez el script `scripts/script_horario.sql`.
+La API no crea las tablas al arrancar (`synchronize` está apagado). Hay que ejecutar `scripts/script_horario.sql`. Es idempotente (`IF NOT EXISTS`): si el script se actualiza, se puede volver a correr para aplicar los cambios nuevos.
 
 ```bash
 # PowerShell
@@ -292,4 +292,4 @@ El código dura 10 minutos, se usa una vez, permite 5 intentos y se puede reenvi
 
 En producción nadie entra con contraseña. `POST /auth/activation/set-password` se rechaza en ese entorno.
 
-La cookie es httpOnly, dura 8 horas y el navegador la manda solo si el frontend está en `http://localhost:4200`.
+La cookie es httpOnly, dura lo que indique `JWT_EXPIRES_IN` (8 horas por defecto) y el navegador la manda solo si el frontend está en `http://localhost:4200`.
