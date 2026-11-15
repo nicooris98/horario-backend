@@ -272,7 +272,7 @@ Corre los tests unitarios.
 pnpm run test:e2e
 ```
 
-Corre los tests de punta a punta.
+Corre los tests de punta a punta. Requiere la base de datos levantada (`docker compose up -d`).
 
 ```bash
 pnpm run test:cov
