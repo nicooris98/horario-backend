@@ -28,7 +28,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload) {
     const user = await this.usersService.findOneById(payload.sub);
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || user.isDisabled) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 

@@ -1,4 +1,4 @@
-import {
+﻿import {
   BadRequestException,
   Injectable,
   Logger,
@@ -68,7 +68,7 @@ export class UserActivationService {
   }
 
   async sendActivationCode(delivery: ActivationDelivery): Promise<void> {
-    await this.emailService.sendActivationCode(delivery.email, delivery.code);
+    this.emailService.sendActivationButtonEmail(delivery.email, delivery.code);
   }
 
   async verifyCode(
@@ -251,13 +251,13 @@ export class UserActivationService {
       });
 
       if (delivery) {
-        await this.sendActivationCode(delivery);
+        await this.emailService.sendLoginCode(delivery.email, delivery.code);
       }
     } catch (error) {
       if (!(error instanceof ServiceUnavailableException)) {
         throw error;
       }
-      this.logger.error('Activation resend could not be completed');
+      this.logger.error('Login code email could not be sent');
     }
 
     return {
