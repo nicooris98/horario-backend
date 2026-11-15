@@ -251,9 +251,67 @@ ${activationUrl}
       );
     }
   }
-  
-  
-  
+
+  /** Código de ingreso. Remitente: BREVO_SENDER_*. No incluye el enlace de activación. */
+  async sendLoginCode(email: string, code: string): Promise<void> {
+    const apiKey = this.configService.get<string>('BREVO_API_KEY');
+    const senderEmail = this.configService.get<string>('BREVO_SENDER_EMAIL');
+    const senderName = this.configService.get<string>('BREVO_SENDER_NAME');
+
+    if (
+      !apiKey ||
+      !senderEmail ||
+      !isEmail(senderEmail) ||
+      !senderName?.trim()
+    ) {
+      this.logger.error('Brevo login sender configuration is incomplete or invalid');
+      throw new ServiceUnavailableException(
+        'No se pudo enviar el correo de ingreso',
+      );
+    }
+
+    const safeCode = this.escapeHtml(code);
+    const payload: BrevoEmailPayload = {
+      sender: { email: senderEmail, name: senderName.trim() },
+      to: [{ email }],
+      subject: 'Código para ingresar — Gestión de Horarios',
+      textContent: `Tu código para ingresar es ${code}.
+Vence en 10 minutos.
+Ingresalo en la pantalla de verificación. No lo compartas.`,
+      htmlContent: `<p>Tu código para ingresar es:</p><p style="font-size:24px;font-weight:bold;letter-spacing:4px">${safeCode}</p><p>Vence en 10 minutos.</p><p>Ingresalo en la pantalla de verificación. No lo compartas.</p>`,
+    };
+
+    try {
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'api-key': apiKey,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      if (!response.ok) {
+        this.logger.error(
+          `Brevo rejected login email with HTTP ${response.status}`,
+        );
+        throw new ServiceUnavailableException(
+          'No se pudo enviar el correo de ingreso',
+        );
+      }
+    } catch (error) {
+      if (error instanceof ServiceUnavailableException) {
+        throw error;
+      }
+
+      this.logger.error('Brevo login email request failed');
+      throw new ServiceUnavailableException(
+        'No se pudo enviar el correo de ingreso',
+      );
+    }
+  }
 
   private buildActivationHtml(safeActivationUrl: string): string {
     return `<!DOCTYPE html>

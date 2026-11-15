@@ -251,13 +251,13 @@ export class UserActivationService {
       });
 
       if (delivery) {
-        await this.emailService.sendActivationCode(delivery.email, delivery.code);
+        await this.emailService.sendLoginCode(delivery.email, delivery.code);
       }
     } catch (error) {
       if (!(error instanceof ServiceUnavailableException)) {
         throw error;
       }
-      this.logger.error('Activation resend could not be completed');
+      this.logger.error('Login code email could not be sent');
     }
 
     return {
