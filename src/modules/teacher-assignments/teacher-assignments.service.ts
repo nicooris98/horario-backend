@@ -379,22 +379,28 @@ export class TeacherAssignmentsService {
       relations: { day: true, classHour: true },
     });
 
-    for (const schedule of schedules) {
-      const conflicts = await this.scheduleOverlapService.checkOverlap({
-        idEccd: draft.courseSectionSubject.id,
-        idDia: schedule.day.id,
-        idHoraCatedra: schedule.classHour.id,
-        fechaDesde: draft.startDate,
-        fechaHasta: draft.endDate || null,
-        idDocente: draft.teacher.id,
-      });
+    // Las franjas de un ECCD son pocas pero cada checkOverlap es una query
+    // pesada: se ejecutan en paralelo y se reporta el primer conflicto.
+    const results = await Promise.all(
+      schedules.map(async (schedule) => {
+        const conflicts = await this.scheduleOverlapService.checkOverlap({
+          idEccd: draft.courseSectionSubject.id,
+          idDia: schedule.day.id,
+          idHoraCatedra: schedule.classHour.id,
+          fechaDesde: draft.startDate,
+          fechaHasta: draft.endDate || null,
+          idDocente: draft.teacher.id,
+        });
+        return conflicts.length > 0 ? { schedule, conflicts } : null;
+      }),
+    );
 
-      if (conflicts.length > 0) {
-        const c = conflicts[0];
-        throw new ConflictException(
-          `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada en el día ${schedule.day.name} (Horario existente ID: ${c.idHorarioExistente}).`,
-        );
-      }
+    const hit = results.find((r) => r !== null);
+    if (hit) {
+      const c = hit.conflicts[0];
+      throw new ConflictException(
+        `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada en el día ${hit.schedule.day.name} (Horario existente ID: ${c.idHorarioExistente}).`,
+      );
     }
   }
 
@@ -417,9 +423,11 @@ export class TeacherAssignmentsService {
     }
   }
 
+  // Solo cuentan las suplencias con vigencia actual o futura: una que ya
+  // terminó no debería bloquear cambios en la asignación titular.
   private hasSubstitutes(id: number) {
     return this.repository.exists({
-      where: { replacedAssignment: { id } },
+      where: overlapping({ replacedAssignment: { id } }, today(), null),
     });
   }
 

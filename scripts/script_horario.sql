@@ -445,3 +445,12 @@ ALTER TABLE "espacio_curricular_curso_division" ALTER COLUMN "estado" SET DEFAUL
 -- =========================================================
 CREATE UNIQUE INDEX IF NOT EXISTS uq_plan_estudio_ciclo_lectivo
 ON "plan_estudio_ciclo_lectivo" ("id_plan_estudio", "id_ciclo_lectivo", "id_turno");
+-- =========================================================
+-- MIGRACION: UNICIDAD DE MATERIAS POR PLAN (case-insensitive)
+-- El servicio valida con LOWER(TRIM(nombre)); este indice cubre la misma
+-- regla a nivel BD. Si falla por duplicados existentes, limpiarlos antes:
+--   SELECT id_plan_estudio, LOWER(TRIM(nombre)), COUNT(*)
+--   FROM espacio_curricular GROUP BY 1, 2 HAVING COUNT(*) > 1;
+-- =========================================================
+CREATE UNIQUE INDEX IF NOT EXISTS uq_espacio_curricular_plan_nombre_ci
+ON "espacio_curricular" ("id_plan_estudio", LOWER(TRIM("nombre")));
