@@ -60,9 +60,9 @@ describe('TeachersService', () => {
     });
 
     it('rechaza un DNI sin 7 u 8 dígitos', async () => {
-      await expect(
-        service.create({ ...validDto, dni: '123' }),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.create({ ...validDto, dni: '123' })).rejects.toThrow(
+        BadRequestException,
+      );
       expect(repository.save).not.toHaveBeenCalled();
     });
 
@@ -91,9 +91,7 @@ describe('TeachersService', () => {
     it('lanza ConflictException si el DNI ya existe', async () => {
       repository.findOneBy.mockResolvedValue({ id: 5, dni: '39040338' });
 
-      await expect(service.create(validDto)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.create(validDto)).rejects.toThrow(ConflictException);
       expect(repository.save).not.toHaveBeenCalled();
     });
   });
@@ -156,9 +154,9 @@ describe('TeachersService', () => {
       );
       repository.save.mockImplementation((entity) => Promise.resolve(entity));
 
-      await expect(
-        service.update(1, { dni: '99.999.999' }),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.update(1, { dni: '99.999.999' })).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 

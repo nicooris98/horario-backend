@@ -62,7 +62,8 @@ export class RolesController {
   })
   @ApiErrorResponses({
     access: 'el permiso roles.create en uno de sus roles activos',
-    badRequest: 'Datos inválidos: nombre vacío o campos con formato incorrecto.',
+    badRequest:
+      'Datos inválidos: nombre vacío o campos con formato incorrecto.',
   })
   create(@Body() createRoleDto: CreateRoleDto) {
     return this.rolesService.create(createRoleDto);
@@ -176,7 +177,10 @@ export class RolesController {
     badRequest: 'Datos inválidos en los campos enviados.',
     notFound: 'Rol inexistente con el ID proporcionado.',
   })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateRoleDto: UpdateRoleDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateRoleDto: UpdateRoleDto,
+  ) {
     return this.rolesService.update(id, updateRoleDto);
   }
 

@@ -107,9 +107,9 @@ describe('SubjectsService', () => {
     it('rechaza un año de cursado mayor a la duración del plan', async () => {
       mockRefs();
 
-      await expect(
-        service.create({ ...validDto, year: 6 }),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.create({ ...validDto, year: 6 })).rejects.toThrow(
+        BadRequestException,
+      );
       expect(repository.save).not.toHaveBeenCalled();
     });
 
@@ -117,9 +117,7 @@ describe('SubjectsService', () => {
       mockRefs();
       queryBuilder.getCount.mockResolvedValue(1);
 
-      await expect(service.create(validDto)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.create(validDto)).rejects.toThrow(ConflictException);
       expect(repository.save).not.toHaveBeenCalled();
     });
 
@@ -144,9 +142,7 @@ describe('SubjectsService', () => {
         return Promise.resolve(null);
       });
 
-      await expect(service.create(validDto)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.create(validDto)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -209,9 +205,9 @@ describe('SubjectsService', () => {
         return Promise.resolve(null);
       });
 
-      await expect(
-        service.update(7, { studyPlanId: 2 }),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.update(7, { studyPlanId: 2 })).rejects.toThrow(
+        BadRequestException,
+      );
       expect(repository.save).not.toHaveBeenCalled();
     });
 

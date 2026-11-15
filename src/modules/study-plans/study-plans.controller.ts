@@ -171,8 +171,7 @@ export class StudyPlanController {
     access: 'el permiso study-plans.update en uno de sus roles activos',
     badRequest:
       'Datos inválidos: estado fuera de los valores permitidos o fechas inconsistentes.',
-    notFound:
-      'Plan de estudio o carrera inexistente con el ID proporcionado.',
+    notFound: 'Plan de estudio o carrera inexistente con el ID proporcionado.',
     conflict:
       'Transición de estado no permitida, plan ya archivado, o la carrera ya tiene un plan vigente (código VIGENTE_EXISTENTE).',
   })

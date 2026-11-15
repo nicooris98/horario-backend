@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { findRef, removeOrConflict } from '../../common/helpers';
@@ -61,7 +65,12 @@ export class StudyPlanAcademicCyclesService {
   ) {
     const m = this.repository.manager;
     if (dto.studyPlanId !== undefined || !item.studyPlan) {
-      item.studyPlan = await findRef(m, StudyPlan, dto.studyPlanId, 'Study plan');
+      item.studyPlan = await findRef(
+        m,
+        StudyPlan,
+        dto.studyPlanId,
+        'Study plan',
+      );
     }
     if (dto.academicCycleId !== undefined || !item.academicCycle) {
       item.academicCycle = await findRef(

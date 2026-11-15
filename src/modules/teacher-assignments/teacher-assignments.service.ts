@@ -5,13 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  Between,
-  FindOptionsWhere,
-  IsNull,
-  Not,
-  Repository,
-} from 'typeorm';
+import { Between, FindOptionsWhere, IsNull, Not, Repository } from 'typeorm';
 import { findRef, requireDateOrder, requireInt } from '../../common/helpers';
 import { CourseSectionSubject } from '../course-section-subjects/entities/course-section-subject.entity';
 import { CourseSection } from '../course-sections/entities/course-section.entity';
@@ -412,9 +406,7 @@ export class TeacherAssignmentsService {
       );
     }
     if (eccd.subject?.status !== 'ACTIVO') {
-      throw new BadRequestException(
-        `Subject ${eccd.subject.id} is inactive`,
-      );
+      throw new BadRequestException(`Subject ${eccd.subject.id} is inactive`);
     }
     if (eccd.courseSection?.status !== 'ACTIVO') {
       throw new BadRequestException(

@@ -57,7 +57,7 @@ export class DegreeService {
     const degree = await this.findOne(id);
 
     if (degree.status === 'INACTIVO') {
-    throw new ConflictException('La carrera ya se encuentra inactiva');
+      throw new ConflictException('La carrera ya se encuentra inactiva');
     }
 
     degree.status = 'INACTIVO';

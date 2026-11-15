@@ -27,7 +27,9 @@ export class PermissionsService {
   }
 
   async findOne(id: number) {
-    const permission = await this.permissionRepository.findOne({ where: { id } });
+    const permission = await this.permissionRepository.findOne({
+      where: { id },
+    });
     if (!permission) {
       throw new NotFoundException(`Permission #${id} not found`);
     }

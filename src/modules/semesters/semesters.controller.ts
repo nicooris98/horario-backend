@@ -148,8 +148,7 @@ export class SemestersController {
   })
   @ApiErrorResponses({
     access: 'el permiso semesters.update en uno de sus roles activos',
-    badRequest:
-      'Datos inválidos o fecha de fin anterior a la de inicio.',
+    badRequest: 'Datos inválidos o fecha de fin anterior a la de inicio.',
     notFound: 'Cuatrimestre inexistente con el ID proporcionado.',
   })
   update(
@@ -176,7 +175,8 @@ export class SemestersController {
   @ApiErrorResponses({
     access: 'el permiso semesters.delete en uno de sus roles activos',
     notFound: 'Cuatrimestre inexistente con el ID proporcionado.',
-    conflict: 'El cuatrimestre está en uso por horarios y no se puede eliminar.',
+    conflict:
+      'El cuatrimestre está en uso por horarios y no se puede eliminar.',
   })
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);

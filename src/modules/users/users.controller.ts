@@ -58,15 +58,19 @@ export class UsersController {
       },
     },
   })
-  @ApiSuccess(201, 'Usuario creado correctamente (cuenta pendiente de activación).', {
-    id: 2,
-    firstName: 'Ana',
-    lastName: 'Pérez',
-    email: 'ana.perez@example.com',
-    isActive: false,
-    isDisabled: false,
-    roles: [],
-  })
+  @ApiSuccess(
+    201,
+    'Usuario creado correctamente (cuenta pendiente de activación).',
+    {
+      id: 2,
+      firstName: 'Ana',
+      lastName: 'Pérez',
+      email: 'ana.perez@example.com',
+      isActive: false,
+      isDisabled: false,
+      roles: [],
+    },
+  )
   @ApiErrorResponses({
     access: 'el rol admin',
     badRequest:
@@ -207,10 +211,7 @@ export class UsersController {
       'No puede desactivar su propia cuenta ni al último administrador activo.',
     notFound: 'Usuario inexistente con el ID proporcionado.',
   })
-  remove(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() actor: User,
-  ) {
+  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() actor: User) {
     return this.usersService.remove(id, actor.id);
   }
 }

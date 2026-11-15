@@ -1,7 +1,4 @@
-import {
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { PermissionsService } from './permissions.service';
 import { Permission } from './entities/permission.entity';
@@ -123,9 +120,9 @@ describe('PermissionsService', () => {
         code: 'roles.read',
       });
 
-      await expect(
-        service.update(1, { code: 'roles.custom' }),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.update(1, { code: 'roles.custom' })).rejects.toThrow(
+        ConflictException,
+      );
       expect(repository.save).not.toHaveBeenCalled();
     });
 

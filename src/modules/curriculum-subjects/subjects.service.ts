@@ -198,7 +198,9 @@ export class SubjectsService {
     }
 
     if (!Number.isInteger(data.year) || data.year < 1) {
-      throw new BadRequestException('El año de cursado debe ser mayor o igual a 1');
+      throw new BadRequestException(
+        'El año de cursado debe ser mayor o igual a 1',
+      );
     }
 
     if (data.year > planDurationYears) {
@@ -208,11 +210,15 @@ export class SubjectsService {
     }
 
     if (!Number.isInteger(data.weeklyHours) || data.weeklyHours < 1) {
-      throw new BadRequestException('Las horas semanales deben ser un entero positivo');
+      throw new BadRequestException(
+        'Las horas semanales deben ser un entero positivo',
+      );
     }
 
     if (typeof data.allowsMultipleTeachers !== 'boolean') {
-      throw new BadRequestException('allowsMultipleTeachers debe ser un valor booleano');
+      throw new BadRequestException(
+        'allowsMultipleTeachers debe ser un valor booleano',
+      );
     }
 
     if (data.allowsMultipleTeachers) {

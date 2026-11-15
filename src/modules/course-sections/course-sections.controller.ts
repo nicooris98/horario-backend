@@ -60,9 +60,9 @@ export class CourseSectionsController {
     studyPlanAcademicCycle: { id: 1 },
   })
   @ApiErrorResponses({
-    access:
-      'el permiso course-sections.create en uno de sus roles activos',
-    badRequest: 'Datos inválidos: identificadores o campos con formato incorrecto.',
+    access: 'el permiso course-sections.create en uno de sus roles activos',
+    badRequest:
+      'Datos inválidos: identificadores o campos con formato incorrecto.',
     notFound:
       'La combinación plan/ciclo/turno (studyPlanAcademicCycleId) no existe.',
   })
@@ -191,7 +191,10 @@ export class CourseSectionsController {
     badRequest: 'Estado inválido. Solo se admiten ACTIVO o INACTIVO.',
     notFound: 'Curso/división inexistente con el ID proporcionado.',
   })
-  updateStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateStatusDto) {
+  updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateStatusDto,
+  ) {
     return this.service.updateStatus(id, dto);
   }
 

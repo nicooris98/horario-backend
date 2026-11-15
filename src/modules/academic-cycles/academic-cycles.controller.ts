@@ -57,7 +57,8 @@ export class AcademicCyclesController {
   })
   @ApiErrorResponses({
     access: 'el permiso academic-cycles.create en uno de sus roles activos',
-    badRequest: 'Datos inválidos: año no entero positivo o fechas con formato incorrecto o rango invertido.',
+    badRequest:
+      'Datos inválidos: año no entero positivo o fechas con formato incorrecto o rango invertido.',
   })
   create(@Body() dto: CreateAcademicCycleDto) {
     return this.service.create(dto);
@@ -147,7 +148,10 @@ export class AcademicCyclesController {
     badRequest: 'Datos inválidos o fecha de fin anterior a la de inicio.',
     notFound: 'Ciclo lectivo inexistente con el ID proporcionado.',
   })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateAcademicCycleDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateAcademicCycleDto,
+  ) {
     return this.service.update(id, dto);
   }
 
@@ -183,7 +187,10 @@ export class AcademicCyclesController {
     badRequest: 'Estado inválido. Solo se admiten ACTIVO o INACTIVO.',
     notFound: 'Ciclo lectivo inexistente con el ID proporcionado.',
   })
-  updateStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateStatusDto) {
+  updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateStatusDto,
+  ) {
     return this.service.updateStatus(id, dto);
   }
 

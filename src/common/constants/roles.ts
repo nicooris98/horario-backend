@@ -13,9 +13,7 @@ export const CRITICAL_PERMISSION_PREFIXES = [
 ] as const;
 
 export function isCriticalPermissionCode(code: string): boolean {
-  return CRITICAL_PERMISSION_PREFIXES.some((prefix) =>
-    code.startsWith(prefix),
-  );
+  return CRITICAL_PERMISSION_PREFIXES.some((prefix) => code.startsWith(prefix));
 }
 
 export function isAdminRoleName(name: string | null | undefined): boolean {

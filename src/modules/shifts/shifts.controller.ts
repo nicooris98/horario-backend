@@ -144,8 +144,7 @@ export class ShiftsController {
   })
   @ApiErrorResponses({
     access: 'el permiso shifts.update en uno de sus roles activos',
-    badRequest:
-      'Datos inválidos o endTime no posterior a startTime.',
+    badRequest: 'Datos inválidos o endTime no posterior a startTime.',
     notFound: 'Turno inexistente con el ID proporcionado.',
   })
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateShiftDto) {
@@ -183,7 +182,10 @@ export class ShiftsController {
     badRequest: 'Estado inválido. Solo se admiten ACTIVO o INACTIVO.',
     notFound: 'Turno inexistente con el ID proporcionado.',
   })
-  updateStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateStatusDto) {
+  updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateStatusDto,
+  ) {
     return this.service.updateStatus(id, dto);
   }
 

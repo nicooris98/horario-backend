@@ -22,9 +22,7 @@ describe('ShiftsService', () => {
     find: jest.fn(),
     findOneBy: jest.fn(),
   };
-  const service = new ShiftsService(
-    repository as unknown as Repository<Shift>,
-  );
+  const service = new ShiftsService(repository as unknown as Repository<Shift>);
 
   beforeEach(() => jest.clearAllMocks());
 

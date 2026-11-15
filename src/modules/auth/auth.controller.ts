@@ -66,10 +66,14 @@ export class AuthController {
       },
     },
   })
-  @ApiSuccess(201, 'Usuario registrado correctamente. Revise su email para activar la cuenta.')
+  @ApiSuccess(
+    201,
+    'Usuario registrado correctamente. Revise su email para activar la cuenta.',
+  )
   @ApiResponse({
     status: 400,
-    description: 'Datos inválidos: campos faltantes o email/password con formato incorrecto.',
+    description:
+      'Datos inválidos: campos faltantes o email/password con formato incorrecto.',
     schema: {
       example: {
         statusCode: 400,
@@ -100,15 +104,25 @@ export class AuthController {
       },
     },
   })
-  @ApiSuccess(200, 'Código verificado correctamente. La cuenta queda activada, se establece la cookie access_token y se devuelve un token para configurar la contraseña (si aún no tiene una).', {
-    message: 'Correo verificado correctamente',
-    requiresPassword: true,
-    passwordSetupToken: 'token-de-configuracion',
-    user: { id: 2, firstName: 'Ana', lastName: 'Pérez', email: 'ana.perez@example.com' },
-  })
+  @ApiSuccess(
+    200,
+    'Código verificado correctamente. La cuenta queda activada, se establece la cookie access_token y se devuelve un token para configurar la contraseña (si aún no tiene una).',
+    {
+      message: 'Correo verificado correctamente',
+      requiresPassword: true,
+      passwordSetupToken: 'token-de-configuracion',
+      user: {
+        id: 2,
+        firstName: 'Ana',
+        lastName: 'Pérez',
+        email: 'ana.perez@example.com',
+      },
+    },
+  )
   @ApiResponse({
     status: 400,
-    description: 'Código inválido, vencido, ya utilizado o con intentos agotados.',
+    description:
+      'Código inválido, vencido, ya utilizado o con intentos agotados.',
     schema: {
       example: {
         statusCode: 400,
@@ -210,7 +224,12 @@ export class AuthController {
         {
           example: {
             verificationRequired: false,
-            user: { id: 2, firstName: 'Ana', lastName: 'Pérez', email: 'ana.perez@example.com' },
+            user: {
+              id: 2,
+              firstName: 'Ana',
+              lastName: 'Pérez',
+              email: 'ana.perez@example.com',
+            },
           },
         },
         {
@@ -294,7 +313,8 @@ export class AuthController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Usuario no autenticado. Token JWT ausente, inválido o expirado.',
+    description:
+      'Usuario no autenticado. Token JWT ausente, inválido o expirado.',
     schema: {
       example: {
         statusCode: 401,

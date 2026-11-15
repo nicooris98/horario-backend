@@ -35,9 +35,7 @@ describe('CourseSectionsService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    repository.manager.findOne.mockImplementation(() =>
-      Promise.resolve(cycle),
-    );
+    repository.manager.findOne.mockImplementation(() => Promise.resolve(cycle));
   });
 
   describe('create', () => {

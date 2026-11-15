@@ -89,7 +89,9 @@ export function requireDateOrder(
 ) {
   const start = parseDate(from, fromField);
   if (to != null && parseDate(to, toField) < start) {
-    throw new BadRequestException(`${toField} must be on or after ${fromField}`);
+    throw new BadRequestException(
+      `${toField} must be on or after ${fromField}`,
+    );
   }
 }
 

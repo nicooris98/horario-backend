@@ -6,7 +6,6 @@ import {
 import { EntityManager, Repository } from 'typeorm';
 import { StudyPlanService } from './study-plans.service';
 import { StudyPlan } from './entities/study-plans.entity';
-import { Degree } from '../degrees/entities/degrees.entity';
 import { STUDY_PLAN_STATUS } from './study-plan-status';
 import { CreateStudyPlanDto } from './dto/create-study-plans.dto';
 
@@ -182,17 +181,17 @@ describe('StudyPlanService', () => {
         status: STUDY_PLAN_STATUS.ARCHIVADO,
       });
 
-      await expect(
-        service.update(10, { status: 'VIGENTE' }),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.update(10, { status: 'VIGENTE' })).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('rechaza archivar un plan por update (solo vía remove)', async () => {
       repository.findOne.mockResolvedValue({ ...plan });
 
-      await expect(
-        service.update(10, { status: 'ARCHIVADO' }),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.update(10, { status: 'ARCHIVADO' })).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('lanza NotFoundException si el plan no existe', async () => {

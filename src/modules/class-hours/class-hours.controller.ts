@@ -66,8 +66,7 @@ export class ClassHoursController {
   @Permissions('class-hours.read')
   @ApiOperation({
     summary: 'Listar horas cátedra',
-    description:
-      'Devuelve todas las franjas horarias de clase registradas.',
+    description: 'Devuelve todas las franjas horarias de clase registradas.',
   })
   @ApiSuccess(200, 'Listado de horas cátedra obtenido correctamente.', [
     { id: 1, slotNumber: 1, startTime: '08:00:00', endTime: '09:30:00' },
@@ -83,7 +82,8 @@ export class ClassHoursController {
   @Permissions('class-hours.read')
   @ApiOperation({
     summary: 'Consultar hora cátedra por ID',
-    description: 'Obtiene el detalle de una franja horaria por su identificador.',
+    description:
+      'Obtiene el detalle de una franja horaria por su identificador.',
   })
   @ApiParam({
     name: 'id',
@@ -135,8 +135,7 @@ export class ClassHoursController {
   })
   @ApiErrorResponses({
     access: 'el permiso class-hours.update en uno de sus roles activos',
-    badRequest:
-      'Datos inválidos o endTime no posterior a startTime.',
+    badRequest: 'Datos inválidos o endTime no posterior a startTime.',
     notFound: 'Hora cátedra inexistente con el ID proporcionado.',
   })
   update(
@@ -163,7 +162,8 @@ export class ClassHoursController {
   @ApiErrorResponses({
     access: 'el permiso class-hours.delete en uno de sus roles activos',
     notFound: 'Hora cátedra inexistente con el ID proporcionado.',
-    conflict: 'La hora cátedra está en uso por horarios y no se puede eliminar.',
+    conflict:
+      'La hora cátedra está en uso por horarios y no se puede eliminar.',
   })
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);

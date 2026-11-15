@@ -65,9 +65,9 @@ describe('StudyPlanAcademicCyclesService', () => {
     });
 
     it('rechaza ids que no son enteros positivos', async () => {
-      await expect(
-        service.create({ ...dto, studyPlanId: 0 }),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.create({ ...dto, studyPlanId: 0 })).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('rechaza la combinación duplicada plan+ciclo+turno', async () => {
@@ -135,7 +135,9 @@ describe('StudyPlanAcademicCyclesService', () => {
       );
       repository.manager.findOneBy.mockImplementation((entity) =>
         Promise.resolve(
-          entity === Shift ? { id: 7 } : refs[(entity as { name: string }).name],
+          entity === Shift
+            ? { id: 7 }
+            : refs[(entity as { name: string }).name],
         ),
       );
       repository.save.mockImplementation((entity) => Promise.resolve(entity));

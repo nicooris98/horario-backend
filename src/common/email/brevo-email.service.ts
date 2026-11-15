@@ -95,7 +95,6 @@ ${activationUrl}
     }
   }
 
-
   /** Mail de activación (botón/link). Remitente: BREVO_ACTIVATION_SENDER_*. No usar para OTP login. */
   async sendAccountActivationEmail(email: string, code: string): Promise<void> {
     const apiKey = this.configService.get<string>('BREVO_API_KEY');
@@ -105,7 +104,7 @@ ${activationUrl}
     const senderName = this.configService.get<string>(
       'BREVO_ACTIVATION_SENDER_NAME',
     );
-    
+
     if (
       !apiKey ||
       !senderEmail ||
@@ -176,9 +175,8 @@ ${activationUrl}
         'No se pudo enviar el correo de activación',
       );
     }
-  }  
-  
-  
+  }
+
   /** Mail de activación aparte: (BREVO_SENDER_*), solo botón/link. */
   async sendActivationButtonEmail(email: string, code: string): Promise<void> {
     const apiKey = this.configService.get<string>('BREVO_API_KEY');
@@ -264,7 +262,9 @@ ${activationUrl}
       !isEmail(senderEmail) ||
       !senderName?.trim()
     ) {
-      this.logger.error('Brevo login sender configuration is incomplete or invalid');
+      this.logger.error(
+        'Brevo login sender configuration is incomplete or invalid',
+      );
       throw new ServiceUnavailableException(
         'No se pudo enviar el correo de ingreso',
       );

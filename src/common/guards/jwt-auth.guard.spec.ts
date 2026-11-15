@@ -5,10 +5,11 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 const mockCanActivate = jest.fn();
 
 jest.mock('@nestjs/passport', () => ({
-  AuthGuard: jest.fn(() =>
-    class MockPassportGuard {
-      canActivate = mockCanActivate;
-    },
+  AuthGuard: jest.fn(
+    () =>
+      class MockPassportGuard {
+        canActivate = mockCanActivate;
+      },
   ),
 }));
 

@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Schedule } from './entities/schedule.entity';
@@ -21,7 +26,12 @@ export class SchedulesService {
 
   async create(dto: CreateScheduleDto) {
     // 1. Validar orden de fechas (usando el helper del proyecto)
-    requireDateOrder(dto.fechaDesde, dto.fechaHasta, 'fechaDesde', 'fechaHasta');
+    requireDateOrder(
+      dto.fechaDesde,
+      dto.fechaHasta,
+      'fechaDesde',
+      'fechaHasta',
+    );
 
     // 2. Verificar solapamiento
     const conflicts = await this.overlapService.checkOverlap({
@@ -36,7 +46,7 @@ export class SchedulesService {
       // Tomamos el primer conflicto para mostrar un mensaje claro
       const c = conflicts[0];
       throw new ConflictException(
-        `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada el ${c.conflictoDesde} hasta ${c.conflictoHasta || 'indefinido'} (Horario existente ID: ${c.idHorarioExistente}).`
+        `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada el ${c.conflictoDesde} hasta ${c.conflictoHasta || 'indefinido'} (Horario existente ID: ${c.idHorarioExistente}).`,
       );
     }
 
@@ -91,11 +101,17 @@ export class SchedulesService {
       idHoraCatedra: dto.idHoraCatedra ?? schedule.classHour.id,
       idDia: dto.idDia ?? schedule.day.id,
       fechaDesde: dto.fechaDesde ?? schedule.startDate,
-      fechaHasta: dto.fechaHasta !== undefined ? dto.fechaHasta : schedule.endDate,
+      fechaHasta:
+        dto.fechaHasta !== undefined ? dto.fechaHasta : schedule.endDate,
     };
 
     // Validar orden de fechas
-    requireDateOrder(merged.fechaDesde, merged.fechaHasta, 'fechaDesde', 'fechaHasta');
+    requireDateOrder(
+      merged.fechaDesde,
+      merged.fechaHasta,
+      'fechaDesde',
+      'fechaHasta',
+    );
 
     // Verificar solapamiento (excluyendo el ID actual)
     const conflicts = await this.overlapService.checkOverlap({
@@ -110,7 +126,7 @@ export class SchedulesService {
     if (conflicts.length > 0) {
       const c = conflicts[0];
       throw new ConflictException(
-        `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada (Horario existente ID: ${c.idHorarioExistente}).`
+        `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada (Horario existente ID: ${c.idHorarioExistente}).`,
       );
     }
 
@@ -144,8 +160,7 @@ export class SchedulesService {
     if (schedule.endDate !== null && schedule.endDate <= today) {
       throw new ConflictException(`El horario #${id} ya está finalizado`);
     }
-    schedule.endDate =
-      schedule.startDate > today ? schedule.startDate : today;
+    schedule.endDate = schedule.startDate > today ? schedule.startDate : today;
     return this.repository.save(schedule);
   }
 

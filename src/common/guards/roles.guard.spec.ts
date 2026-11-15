@@ -56,7 +56,10 @@ describe('RolesGuard', () => {
 
   it('tira 401 si el usuario está inactivo', () => {
     reflector.getAllAndOverride.mockReturnValue([RoleName.ADMIN]);
-    const user = userWithRoles([{ name: RoleName.ADMIN, isActive: true }], false);
+    const user = userWithRoles(
+      [{ name: RoleName.ADMIN, isActive: true }],
+      false,
+    );
 
     expect(() => guard.canActivate(mockContext(user))).toThrow(
       UnauthorizedException,

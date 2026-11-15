@@ -5,13 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import {
-  FindOptionsWhere,
-  ILike,
-  In,
-  Repository,
-} from 'typeorm';
-import { deactivate, pick, requireInt, requireText } from '../../common/helpers';
+  deactivate,
+  pick,
+  requireInt,
+  requireText,
+} from '../../common/helpers';
 import { TeacherAssignment } from '../teacher-assignments/entities/teacher-assignment.entity';
 import { activeOn } from '../teacher-assignments/teacher-assignments.helpers';
 import { FIELDS, TEACHER_STATUSES } from './constants/teachers.constants';

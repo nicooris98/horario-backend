@@ -551,8 +551,7 @@ export class SubjectsController {
   })
   @ApiResponse({
     status: 409,
-    description:
-      'Conflicto. La materia ya se encuentra inactiva previamente.',
+    description: 'Conflicto. La materia ya se encuentra inactiva previamente.',
     schema: {
       example: {
         statusCode: 409,

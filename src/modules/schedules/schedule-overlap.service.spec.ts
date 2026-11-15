@@ -52,7 +52,13 @@ describe('ScheduleOverlapService', () => {
     });
 
     expect(dataSource.query.mock.calls[0][1]).toEqual([
-      10, 3, 2, '2026-03-01', null, 5, 7,
+      10,
+      3,
+      2,
+      '2026-03-01',
+      null,
+      5,
+      7,
     ]);
   });
 });

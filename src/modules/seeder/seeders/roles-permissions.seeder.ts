@@ -113,7 +113,6 @@ const permissions = [
   { name: 'Ver docentes', code: 'teachers.read' },
   { name: 'Editar docentes', code: 'teachers.update' },
   { name: 'Eliminar docentes', code: 'teachers.delete' },
-
 ] as const;
 
 const rolePermissionCodes: Record<string, readonly string[]> = {

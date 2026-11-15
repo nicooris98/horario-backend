@@ -1,7 +1,4 @@
-import {
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { RolesService } from './roles.service';
 import { Role } from './entities/role.entity';
@@ -25,27 +22,44 @@ describe('RolesService.setActive', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('desactiva un rol', async () => {
-    txManager.findOne.mockResolvedValue({ id: 1, name: 'docente', isActive: true });
+    txManager.findOne.mockResolvedValue({
+      id: 1,
+      name: 'docente',
+      isActive: true,
+    });
     const role = await service.setActive(1, false);
     expect(role.isActive).toBe(false);
-    expect(txManager.save).toHaveBeenCalledWith(Role, expect.objectContaining({ isActive: false }));
+    expect(txManager.save).toHaveBeenCalledWith(
+      Role,
+      expect.objectContaining({ isActive: false }),
+    );
     expect(roleRepository.save).not.toHaveBeenCalled();
   });
 
   it('activa un rol', async () => {
-    txManager.findOne.mockResolvedValue({ id: 1, name: 'docente', isActive: false });
+    txManager.findOne.mockResolvedValue({
+      id: 1,
+      name: 'docente',
+      isActive: false,
+    });
     const role = await service.setActive(1, true);
     expect(role.isActive).toBe(true);
   });
 
   it('tira 404 si el rol no existe', async () => {
     txManager.findOne.mockResolvedValue(null);
-    await expect(service.setActive(99, true)).rejects.toThrow(NotFoundException);
+    await expect(service.setActive(99, true)).rejects.toThrow(
+      NotFoundException,
+    );
     expect(txManager.save).not.toHaveBeenCalled();
   });
 
   it('bloquea la fila del rol con FOR UPDATE dentro de una transaccion', async () => {
-    txManager.findOne.mockResolvedValue({ id: 1, name: 'docente', isActive: true });
+    txManager.findOne.mockResolvedValue({
+      id: 1,
+      name: 'docente',
+      isActive: true,
+    });
     await service.setActive(1, false);
     expect(roleRepository.manager.transaction).toHaveBeenCalledTimes(1);
     expect(txManager.findOne).toHaveBeenCalledWith(Role, {
@@ -56,20 +70,34 @@ describe('RolesService.setActive', () => {
   });
 
   it('propaga el error de escritura para que la transaccion se revierta', async () => {
-    txManager.findOne.mockResolvedValue({ id: 1, name: 'docente', isActive: true });
+    txManager.findOne.mockResolvedValue({
+      id: 1,
+      name: 'docente',
+      isActive: true,
+    });
     txManager.save.mockRejectedValueOnce(new Error('db error'));
     await expect(service.setActive(1, false)).rejects.toThrow('db error');
   });
 
   it('rechaza desactivar el rol admin', async () => {
-    txManager.findOne.mockResolvedValue({ id: 1, name: 'admin', isActive: true });
+    txManager.findOne.mockResolvedValue({
+      id: 1,
+      name: 'admin',
+      isActive: true,
+    });
 
-    await expect(service.setActive(1, false)).rejects.toThrow(ConflictException);
+    await expect(service.setActive(1, false)).rejects.toThrow(
+      ConflictException,
+    );
     expect(txManager.save).not.toHaveBeenCalled();
   });
 
   it('permite reactivar el rol admin', async () => {
-    txManager.findOne.mockResolvedValue({ id: 1, name: 'admin', isActive: false });
+    txManager.findOne.mockResolvedValue({
+      id: 1,
+      name: 'admin',
+      isActive: false,
+    });
     const role = await service.setActive(1, true);
     expect(role.isActive).toBe(true);
   });

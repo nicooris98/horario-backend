@@ -25,8 +25,7 @@ export class DatabaseExceptionFilter extends BaseExceptionFilter {
 
   toHttpException(error: QueryFailedError): HttpException | null {
     const driverError = error.driverError as
-      | { code?: string; constraint?: string }
-      | undefined;
+      { code?: string; constraint?: string } | undefined;
     const code = driverError?.code;
     const detail = driverError?.constraint
       ? ` (constraint: ${driverError.constraint})`

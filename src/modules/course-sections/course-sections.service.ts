@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -88,9 +92,7 @@ export class CourseSectionsService {
       },
     );
     if (!cycle) {
-      throw new NotFoundException(
-        `Study plan academic cycle ${id} not found`,
-      );
+      throw new NotFoundException(`Study plan academic cycle ${id} not found`);
     }
     if (cycle.academicCycle.status !== 'ACTIVO') {
       throw new BadRequestException(

@@ -91,9 +91,7 @@ describe('SchedulesService', () => {
         },
       ]);
 
-      await expect(service.create(validDto)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.create(validDto)).rejects.toThrow(ConflictException);
       expect(repository.save).not.toHaveBeenCalled();
     });
 
@@ -109,9 +107,7 @@ describe('SchedulesService', () => {
       overlapService.checkOverlap.mockResolvedValue([]);
       repository.manager.findOneBy.mockResolvedValueOnce(null);
 
-      await expect(service.create(validDto)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.create(validDto)).rejects.toThrow(NotFoundException);
       expect(repository.save).not.toHaveBeenCalled();
     });
 

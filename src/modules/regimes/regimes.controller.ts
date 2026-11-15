@@ -60,8 +60,7 @@ export class RegimesController {
   @Permissions('regimes.read')
   @ApiOperation({
     summary: 'Listar regímenes de cursado',
-    description:
-      'Devuelve todos los regímenes de cursado registrados.',
+    description: 'Devuelve todos los regímenes de cursado registrados.',
   })
   @ApiSuccess(200, 'Listado de regímenes obtenido correctamente.', [
     { id: 1, name: 'Cuatrimestral' },
@@ -77,7 +76,8 @@ export class RegimesController {
   @Permissions('regimes.read')
   @ApiOperation({
     summary: 'Consultar régimen por ID',
-    description: 'Obtiene el detalle de un régimen de cursado por su identificador.',
+    description:
+      'Obtiene el detalle de un régimen de cursado por su identificador.',
   })
   @ApiParam({
     name: 'id',
@@ -125,10 +125,7 @@ export class RegimesController {
     badRequest: 'Datos inválidos: el nombre es obligatorio si se envía.',
     notFound: 'Régimen inexistente con el ID proporcionado.',
   })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateRegimeDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateRegimeDto) {
     return this.service.update(id, dto);
   }
 

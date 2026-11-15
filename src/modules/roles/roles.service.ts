@@ -5,7 +5,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { isAdminRoleName, isCriticalPermissionCode } from '../../common/constants/roles';
+import {
+  isAdminRoleName,
+  isCriticalPermissionCode,
+} from '../../common/constants/roles';
 import { Role } from './entities/role.entity';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -117,9 +120,7 @@ export class RolesService {
       );
     }
     if (dto.name !== undefined && dto.name.trim().toLowerCase() !== 'admin') {
-      throw new ConflictException(
-        'No se puede renombrar el rol admin',
-      );
+      throw new ConflictException('No se puede renombrar el rol admin');
     }
   }
 }

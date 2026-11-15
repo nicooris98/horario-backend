@@ -9,7 +9,6 @@ import { ScheduleOverlapService } from '../schedules/schedule-overlap.service';
 import { TeacherAssignment } from './entities/teacher-assignment.entity';
 import { Teacher } from '../teachers/entities/teacher.entity';
 import { PositionType } from '../position-types/entities/position-type.entity';
-import { CourseSectionSubject } from '../course-section-subjects/entities/course-section-subject.entity';
 import { CreateTeacherAssignmentDto } from './dto/create-teacher-assignment.dto';
 
 const titularPositionType = {
@@ -78,7 +77,10 @@ describe('TeacherAssignmentsService', () => {
     overlapService as unknown as ScheduleOverlapService,
   );
 
-  const mockRefs = (teacher = activeTeacher, positionType = titularPositionType) => {
+  const mockRefs = (
+    teacher = activeTeacher,
+    positionType = titularPositionType,
+  ) => {
     repository.manager.findOneBy.mockImplementation((entity) => {
       if (entity === Teacher) return Promise.resolve(teacher);
       if (entity === PositionType) return Promise.resolve(positionType);
@@ -183,9 +185,7 @@ describe('TeacherAssignmentsService', () => {
         Promise.resolve(Array.isArray(options?.where) ? { id: 50 } : null),
       );
 
-      await expect(service.create(validDto)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.create(validDto)).rejects.toThrow(ConflictException);
       expect(repository.save).not.toHaveBeenCalled();
     });
 
@@ -193,9 +193,7 @@ describe('TeacherAssignmentsService', () => {
       mockRefs();
       repository.count.mockResolvedValue(1);
 
-      await expect(service.create(validDto)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.create(validDto)).rejects.toThrow(ConflictException);
       expect(repository.save).not.toHaveBeenCalled();
     });
 

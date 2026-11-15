@@ -262,9 +262,7 @@ describe('UsersService - asignación de roles', () => {
       };
       userRepository.createQueryBuilder.mockReturnValue(qb);
 
-      const error = await service
-        .update(10, { role_ids: [2] })
-        .catch((e) => e);
+      const error = await service.update(10, { role_ids: [2] }).catch((e) => e);
 
       expect(error).toBeInstanceOf(BadRequestException);
       expect(error.message).toContain('sin administradores activos');
@@ -307,7 +305,9 @@ describe('Concurrencia entre asignacion y desactivacion de roles', () => {
     const waiters: Array<() => void> = [];
     const wake = () => waiters.splice(0).forEach((w) => w());
     const acquire = async (mode: string) => {
-      while (mode === 'pessimistic_read' ? exclusive : exclusive || sharedHolders > 0) {
+      while (
+        mode === 'pessimistic_read' ? exclusive : exclusive || sharedHolders > 0
+      ) {
         await new Promise<void>((resolve) => waiters.push(resolve));
       }
       if (mode === 'pessimistic_read') sharedHolders++;
@@ -330,7 +330,10 @@ describe('Concurrencia entre asignacion y desactivacion de roles', () => {
           events.push('deactivate:role-locked');
           return { ...role };
         },
-        save: async (_e: unknown, entity: { roles?: unknown; isActive: boolean }) => {
+        save: async (
+          _e: unknown,
+          entity: { roles?: unknown; isActive: boolean },
+        ) => {
           await new Promise((resolve) => setTimeout(resolve, 5));
           if (entity.roles) {
             events.push('assign:user-saved');
@@ -375,7 +378,9 @@ describe('Concurrencia entre asignacion y desactivacion de roles', () => {
       } as unknown as UserActivationService,
     );
     const rolesService = new RolesService(
-      { manager: { transaction: db.transaction } } as unknown as Repository<Role>,
+      {
+        manager: { transaction: db.transaction },
+      } as unknown as Repository<Role>,
       {} as PermissionsService,
     );
 
@@ -416,7 +421,9 @@ describe('Concurrencia entre asignacion y desactivacion de roles', () => {
       } as unknown as UserActivationService,
     );
     const rolesService = new RolesService(
-      { manager: { transaction: db.transaction } } as unknown as Repository<Role>,
+      {
+        manager: { transaction: db.transaction },
+      } as unknown as Repository<Role>,
       {} as PermissionsService,
     );
 

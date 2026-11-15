@@ -73,18 +73,14 @@ export class StudyPlanAcademicCyclesController {
     description:
       'Devuelve todas las combinaciones plan de estudio + ciclo lectivo + turno registradas, con sus relaciones.',
   })
-  @ApiSuccess(
-    200,
-    'Listado de combinaciones obtenido correctamente.',
-    [
-      {
-        id: 1,
-        studyPlan: { id: 1 },
-        academicCycle: { id: 1 },
-        shift: { id: 1 },
-      },
-    ],
-  )
+  @ApiSuccess(200, 'Listado de combinaciones obtenido correctamente.', [
+    {
+      id: 1,
+      studyPlan: { id: 1 },
+      academicCycle: { id: 1 },
+      shift: { id: 1 },
+    },
+  ])
   @ApiErrorResponses({
     access:
       'el permiso study-plan-academic-cycles.read en uno de sus roles activos',

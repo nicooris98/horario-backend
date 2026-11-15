@@ -94,9 +94,9 @@ describe('ClassHoursService', () => {
     it('rechaza una actualización con horas invertidas', async () => {
       repository.findOneBy.mockResolvedValue({ ...classHour });
 
-      await expect(
-        service.update(1, { startTime: '10:00' }),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.update(1, { startTime: '10:00' })).rejects.toThrow(
+        BadRequestException,
+      );
       expect(repository.save).not.toHaveBeenCalled();
     });
   });

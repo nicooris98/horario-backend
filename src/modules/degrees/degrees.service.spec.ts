@@ -45,9 +45,9 @@ describe('DegreeService', () => {
     });
 
     it('rechaza un nombre que no es texto', async () => {
-      expect(() =>
-        service.create({ name: 123 as unknown as string }),
-      ).toThrow(BadRequestException);
+      expect(() => service.create({ name: 123 as unknown as string })).toThrow(
+        BadRequestException,
+      );
       expect(degreeRepository.create).not.toHaveBeenCalled();
     });
   });
@@ -91,9 +91,9 @@ describe('DegreeService', () => {
         Promise.resolve(savedDegree),
       );
 
-      await expect(
-        service.update(1, { name: 'Informática' }),
-      ).resolves.toEqual({ id: 1, name: 'Informática' });
+      await expect(service.update(1, { name: 'Informática' })).resolves.toEqual(
+        { id: 1, name: 'Informática' },
+      );
       expect(degreeRepository.save).toHaveBeenCalledWith({
         id: 1,
         name: 'Informática',
@@ -103,9 +103,9 @@ describe('DegreeService', () => {
     it('lanza NotFoundException si la carrera no existe', async () => {
       degreeRepository.findOneBy.mockResolvedValue(null);
 
-      await expect(
-        service.update(99, { name: 'Informática' }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.update(99, { name: 'Informática' })).rejects.toThrow(
+        NotFoundException,
+      );
       expect(degreeRepository.save).not.toHaveBeenCalled();
     });
 

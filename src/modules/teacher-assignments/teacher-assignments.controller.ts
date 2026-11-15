@@ -81,8 +81,7 @@ export class TeacherAssignmentsController {
     endDate: null,
   })
   @ApiErrorResponses({
-    access:
-      'el permiso teacher-assignments.create en uno de sus roles activos',
+    access: 'el permiso teacher-assignments.create en uno de sus roles activos',
     badRequest:
       'Datos inválidos: fechas inconsistentes, horas semanales inválidas, el cargo no admite la configuración enviada, la asignación no puede reemplazarse a sí misma, o las referencias no cumplen las reglas del tipo de cargo.',
     notFound:

@@ -18,7 +18,10 @@ import {
 } from '@nestjs/swagger';
 import { DegreeService } from './degrees.service';
 import { CreateDegreeDto } from './dto/create-degrees.dto';
-import { UpdateDegreeDto, UpdateDegreeStatusDto } from './dto/update-degrees.dto';
+import {
+  UpdateDegreeDto,
+  UpdateDegreeStatusDto,
+} from './dto/update-degrees.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
@@ -35,8 +38,7 @@ export class DegreeController {
   @Permissions('degrees.create')
   @ApiOperation({
     summary: 'Crear una carrera',
-    description:
-      'Registra una nueva carrera (título de grado) en el sistema.',
+    description: 'Registra una nueva carrera (título de grado) en el sistema.',
   })
   @ApiBody({
     type: CreateDegreeDto,

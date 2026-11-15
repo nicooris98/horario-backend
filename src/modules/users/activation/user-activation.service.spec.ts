@@ -145,16 +145,13 @@ describe('UserActivationService', () => {
     it('rechaza si el usuario no existe', async () => {
       mockLookup(null, null);
 
-      await expect(
-        service.verifyCode('x@y.com', '123456'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.verifyCode('x@y.com', '123456')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('rechaza si el usuario ya tiene contraseña (no prod)', async () => {
-      mockLookup(
-        { ...pendingUser, isActive: true, password: 'hash' },
-        null,
-      );
+      mockLookup({ ...pendingUser, isActive: true, password: 'hash' }, null);
 
       await expect(
         service.verifyCode('ana@example.com', '123456'),
@@ -227,9 +224,7 @@ describe('UserActivationService', () => {
     });
     const mockChallengeAndUser = (chal: unknown, user: unknown) => {
       txManager.findOne.mockImplementation((entity) =>
-        Promise.resolve(
-          entity === AccountActivationChallenge ? chal : user,
-        ),
+        Promise.resolve(entity === AccountActivationChallenge ? chal : user),
       );
     };
 
@@ -273,11 +268,7 @@ describe('UserActivationService', () => {
       const user = { ...pendingUser, isActive: true, password: null };
       mockChallengeAndUser(chal, user);
 
-      const result = await service.setPassword(
-        token,
-        'password1',
-        'password1',
-      );
+      const result = await service.setPassword(token, 'password1', 'password1');
 
       expect(result.message).toBe('Contraseña configurada correctamente');
       expect(user.password).toBe('hashed-password');
