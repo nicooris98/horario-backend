@@ -190,6 +190,46 @@ describe('TeacherAssignmentsService', () => {
       );
     });
 
+    it('valida el solapamiento horario del docente también para suplencias', async () => {
+      mockRefs(otherTeacher, substitutePositionType);
+      repository.findOne.mockImplementation((options) => {
+        const where = options?.where;
+        if (Array.isArray(where)) return Promise.resolve(null);
+        if (where?.id === 7) return Promise.resolve(titular);
+        return Promise.resolve({ id: 99 });
+      });
+      repository.manager.find.mockResolvedValue([
+        { day: { id: 1, name: 'Lunes' }, classHour: { id: 2 } },
+      ]);
+      overlapService.checkOverlap.mockResolvedValue([
+        {
+          nombreDocente: 'Ana',
+          apellidoDocente: 'Gómez',
+          idHorarioExistente: 9,
+        },
+      ]);
+
+      await expect(
+        service.create({
+          teacherId: 3,
+          positionTypeId: 4,
+          replacedAssignmentId: 7,
+          startDate: '2026-04-01',
+          endDate: '2026-05-01',
+        }),
+      ).rejects.toThrow(ConflictException);
+
+      expect(overlapService.checkOverlap).toHaveBeenCalledWith({
+        idEccd: 10,
+        idDia: 1,
+        idHoraCatedra: 2,
+        fechaDesde: '2026-04-01',
+        fechaHasta: '2026-05-01',
+        idDocente: 3,
+      });
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
     it('rechaza una suplencia sin replacedAssignmentId', async () => {
       mockRefs(otherTeacher, substitutePositionType);
 

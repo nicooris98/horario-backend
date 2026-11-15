@@ -340,6 +340,7 @@ export class TeacherAssignmentsService {
           `Teacher assignment ${titular.id} already has a substitute for those dates (id ${otherSubstitute.id})`,
         );
       }
+      await this.assertNoScheduleConflict(draft);
       return;
     }
 
@@ -365,34 +366,35 @@ export class TeacherAssignmentsService {
       );
     }
 
-    // --- NUEVO: Validación de solapamiento horario (Módulo 3.2) ---
-    // Si el ECCD ya tiene horarios cargados, verificamos que el docente
-    // no choque con otras clases que ya tenga en esos mismos días/franjas.
+    await this.assertNoScheduleConflict(draft);
+  }
+
+  // Si el ECCD ya tiene horarios cargados, verificamos que el docente
+  // no choque con otras clases que ya tenga en esos mismos días/franjas.
+  // Aplica tanto a titulares como a suplentes.
+  private async assertNoScheduleConflict(draft: Draft) {
     const schedules = await this.repository.manager.find(Schedule, {
       where: { courseSectionSubject: { id: draft.courseSectionSubject.id } },
       relations: { day: true, classHour: true },
     });
 
-    if (schedules.length > 0) {
-      for (const schedule of schedules) {
-        const conflicts = await this.scheduleOverlapService.checkOverlap({
-          idEccd: draft.courseSectionSubject.id,
-          idDia: schedule.day.id,
-          idHoraCatedra: schedule.classHour.id,
-          fechaDesde: startDate,
-          fechaHasta: endDate || null,
-          idDocente: draft.teacher.id, // <-- LÍNEA AGREGADA PARA FORZAR LA VALIDACIÓN
-        });
+    for (const schedule of schedules) {
+      const conflicts = await this.scheduleOverlapService.checkOverlap({
+        idEccd: draft.courseSectionSubject.id,
+        idDia: schedule.day.id,
+        idHoraCatedra: schedule.classHour.id,
+        fechaDesde: draft.startDate,
+        fechaHasta: draft.endDate || null,
+        idDocente: draft.teacher.id,
+      });
 
-        if (conflicts.length > 0) {
-          const c = conflicts[0];
-          throw new ConflictException(
-            `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada en el día ${schedule.day.name} (Horario existente ID: ${c.idHorarioExistente}).`,
-          );
-        }
+      if (conflicts.length > 0) {
+        const c = conflicts[0];
+        throw new ConflictException(
+          `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada en el día ${schedule.day.name} (Horario existente ID: ${c.idHorarioExistente}).`,
+        );
       }
     }
-    // --- FIN NUEVO ---
   }
 
   private hasSubstitutes(id: number) {
