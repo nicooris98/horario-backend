@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { join } from 'node:path';
 import { SubjectsModule } from './modules/curriculum-subjects/subjects.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -27,6 +29,7 @@ import { SchedulesModule } from './modules/schedules/schedules.module';
       isGlobal: true,
       envFilePath: join(__dirname, '..', '.env'),
     }),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -63,6 +66,6 @@ import { SchedulesModule } from './modules/schedules/schedules.module';
     SchedulesModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
