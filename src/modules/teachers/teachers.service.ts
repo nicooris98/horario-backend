@@ -9,11 +9,9 @@ import {
   FindOptionsWhere,
   ILike,
   In,
-  QueryFailedError,
   Repository,
 } from 'typeorm';
-import { FOREIGN_KEY_VIOLATION } from '../../common/constants/database.constants';
-import { pick, requireInt, requireText } from '../../common/helpers';
+import { deactivate, pick, requireInt, requireText } from '../../common/helpers';
 import { TeacherAssignment } from '../teacher-assignments/entities/teacher-assignment.entity';
 import { activeOn } from '../teacher-assignments/teacher-assignments.helpers';
 import { FIELDS, TEACHER_STATUSES } from './constants/teachers.constants';
@@ -107,19 +105,9 @@ export class TeachersService {
 
   async remove(id: number) {
     const item = await this.findOne(id);
-    try {
-      return await this.repository.remove(item);
-    } catch (error) {
-      if (
-        error instanceof QueryFailedError &&
-        (error.driverError as { code?: string }).code === FOREIGN_KEY_VIOLATION
-      ) {
-        throw new ConflictException(
-          `Teacher ${id} has assignments and cannot be deleted; deactivate it instead`,
-        );
-      }
-      throw error;
-    }
+    return this.repository.save(
+      deactivate(item, 'El docente ya se encuentra inactivo'),
+    );
   }
 
   private async requireUniqueDni(dni: string, exceptId?: number) {

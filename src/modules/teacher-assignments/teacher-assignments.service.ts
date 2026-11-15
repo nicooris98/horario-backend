@@ -10,10 +10,8 @@ import {
   FindOptionsWhere,
   IsNull,
   Not,
-  QueryFailedError,
   Repository,
 } from 'typeorm';
-import { FOREIGN_KEY_VIOLATION } from '../../common/constants/database.constants';
 import { findRef, requireDateOrder, requireInt } from '../../common/helpers';
 import { CourseSectionSubject } from '../course-section-subjects/entities/course-section-subject.entity';
 import { CourseSection } from '../course-sections/entities/course-section.entity';
@@ -149,19 +147,12 @@ export class TeacherAssignmentsService {
 
   async remove(id: number) {
     const item = await this.findOne(id);
-    try {
-      return await this.repository.remove(item);
-    } catch (error) {
-      if (
-        error instanceof QueryFailedError &&
-        (error.driverError as { code?: string }).code === FOREIGN_KEY_VIOLATION
-      ) {
-        throw new ConflictException(
-          `Teacher assignment ${id} has substitutes and cannot be deleted`,
-        );
-      }
-      throw error;
+    const date = today();
+    if (item.endDate !== null && item.endDate <= date) {
+      throw new ConflictException(`Teacher assignment ${id} already ended`);
     }
+    item.endDate = item.startDate > date ? item.startDate : date;
+    return this.repository.save(item);
   }
 
   // Busca las referencias y aplica las reglas que dependen del tipo de cargo.

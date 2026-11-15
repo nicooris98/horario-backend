@@ -124,10 +124,17 @@ export class SchedulesService {
   }
 
   async remove(id: number) {
-    // Nota: Según las reglas de negocio (RN-11), los horarios no se borran físicamente.
-    // Esto debería ser una baja lógica (ej. fecha_hasta = hoy).
-    // Por ahora, dejamos un remove físico para pruebas del endpoint.
+    // RN-11: los horarios no se borran físicamente; se marcan como finalizados.
     const schedule = await this.findOne(id);
-    return this.repository.remove(schedule);
+    const now = new Date();
+    const today = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
+      .toISOString()
+      .slice(0, 10);
+    if (schedule.endDate !== null && schedule.endDate <= today) {
+      throw new ConflictException(`El horario #${id} ya está finalizado`);
+    }
+    schedule.endDate =
+      schedule.startDate > today ? schedule.startDate : today;
+    return this.repository.save(schedule);
   }
 }
