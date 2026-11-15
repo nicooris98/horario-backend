@@ -1,6 +1,7 @@
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { DatabaseExceptionFilter } from './common/filters/database-exception.filter';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 async function bootstrap() {
@@ -22,6 +23,8 @@ async function bootstrap() {
   );
 
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+
+  app.useGlobalFilters(new DatabaseExceptionFilter());
 
   // Configuración de Swagger
   const config = new DocumentBuilder()
