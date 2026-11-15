@@ -5,7 +5,11 @@ import { Schedule } from './entities/schedule.entity';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
 import { ScheduleOverlapService } from './schedule-overlap.service';
-import { requireDateOrder } from '../../common/helpers'; // Reutilizamos el helper del proyecto
+import { findRef, requireDateOrder } from '../../common/helpers';
+import { CourseSectionSubject } from '../course-section-subjects/entities/course-section-subject.entity';
+import { Semester } from '../semesters/entities/semester.entity';
+import { ClassHour } from '../class-hours/entities/class-hour.entity';
+import { Day } from './entities/day.entity';
 
 @Injectable()
 export class SchedulesService {
@@ -37,11 +41,12 @@ export class SchedulesService {
     }
 
     // 3. Guardar
+    const refs = await this.resolveRefs(dto);
     const schedule = this.repository.create({
-      courseSectionSubject: { id: dto.idCursado },
-      semester: { id: dto.idCuatrimestre },
-      classHour: { id: dto.idHoraCatedra },
-      day: { id: dto.idDia },
+      courseSectionSubject: refs.courseSectionSubject,
+      semester: refs.semester,
+      classHour: refs.classHour,
+      day: refs.day,
       startDate: dto.fechaDesde,
       endDate: dto.fechaHasta || null,
     });
@@ -110,12 +115,18 @@ export class SchedulesService {
     }
 
     // Actualizamos
+    const refs = await this.resolveRefs({
+      idCursado: merged.idCursado,
+      idCuatrimestre: merged.idCuatrimestre,
+      idHoraCatedra: merged.idHoraCatedra,
+      idDia: merged.idDia,
+    });
     await this.repository.save({
       id,
-      courseSectionSubject: { id: merged.idCursado },
-      semester: { id: merged.idCuatrimestre },
-      classHour: { id: merged.idHoraCatedra },
-      day: { id: merged.idDia },
+      courseSectionSubject: refs.courseSectionSubject,
+      semester: refs.semester,
+      classHour: refs.classHour,
+      day: refs.day,
       startDate: merged.fechaDesde,
       endDate: merged.fechaHasta || null,
     });
@@ -136,5 +147,25 @@ export class SchedulesService {
     schedule.endDate =
       schedule.startDate > today ? schedule.startDate : today;
     return this.repository.save(schedule);
+  }
+
+  private resolveRefs(ids: {
+    idCursado: number;
+    idCuatrimestre: number;
+    idHoraCatedra: number;
+    idDia: number;
+  }) {
+    const manager = this.repository.manager;
+    return Promise.all([
+      findRef(manager, CourseSectionSubject, ids.idCursado, 'Course section subject'),
+      findRef(manager, Semester, ids.idCuatrimestre, 'Semester'),
+      findRef(manager, ClassHour, ids.idHoraCatedra, 'Class hour'),
+      findRef(manager, Day, ids.idDia, 'Day'),
+    ]).then(([courseSectionSubject, semester, classHour, day]) => ({
+      courseSectionSubject,
+      semester,
+      classHour,
+      day,
+    }));
   }
 }

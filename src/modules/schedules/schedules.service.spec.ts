@@ -34,6 +34,11 @@ describe('SchedulesService', () => {
     save: jest.fn((entity) => Promise.resolve({ id: 5, ...entity })),
     find: jest.fn(),
     findOne: jest.fn(),
+    manager: {
+      findOneBy: jest.fn((_entity: unknown, where: { id: number }) =>
+        Promise.resolve({ id: where.id }),
+      ),
+    },
   };
   const overlapService = { checkOverlap: jest.fn() };
   const service = new SchedulesService(
@@ -89,6 +94,16 @@ describe('SchedulesService', () => {
         service.create({ ...validDto, fechaHasta: '2026-01-01' }),
       ).rejects.toThrow(BadRequestException);
       expect(overlapService.checkOverlap).not.toHaveBeenCalled();
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('lanza NotFoundException si una referencia no existe', async () => {
+      overlapService.checkOverlap.mockResolvedValue([]);
+      repository.manager.findOneBy.mockResolvedValueOnce(null);
+
+      await expect(service.create(validDto)).rejects.toThrow(
+        NotFoundException,
+      );
       expect(repository.save).not.toHaveBeenCalled();
     });
   });
@@ -169,6 +184,17 @@ describe('SchedulesService', () => {
       repository.findOne.mockResolvedValue(null);
 
       await expect(service.update(99, {})).rejects.toThrow(NotFoundException);
+    });
+
+    it('lanza NotFoundException si una referencia actualizada no existe', async () => {
+      repository.findOne.mockResolvedValue(schedule);
+      overlapService.checkOverlap.mockResolvedValue([]);
+      repository.manager.findOneBy.mockResolvedValueOnce(null);
+
+      await expect(service.update(5, { idDia: 99 })).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repository.save).not.toHaveBeenCalled();
     });
   });
 
