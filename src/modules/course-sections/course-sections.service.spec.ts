@@ -6,9 +6,13 @@ import {
 import { Repository } from 'typeorm';
 import { CourseSectionsService } from './course-sections.service';
 import { CourseSection } from './entities/course-section.entity';
-import { StudyPlanAcademicCycle } from '../study-plan-academic-cycles/entities/study-plan-academic-cycle.entity';
 
-const cycle = { id: 5, studyPlan: { id: 1 } };
+const cycle = {
+  id: 5,
+  studyPlan: { id: 1, status: 'VIGENTE' },
+  academicCycle: { id: 2, status: 'ACTIVO' },
+  shift: { id: 3, status: 'ACTIVO' },
+};
 const section = {
   id: 1,
   courseYear: 2,
@@ -23,7 +27,7 @@ describe('CourseSectionsService', () => {
     save: jest.fn((entity) => Promise.resolve(entity)),
     find: jest.fn(),
     findOne: jest.fn(),
-    manager: { findOneBy: jest.fn() },
+    manager: { findOne: jest.fn() },
   };
   const service = new CourseSectionsService(
     repository as unknown as Repository<CourseSection>,
@@ -31,8 +35,8 @@ describe('CourseSectionsService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    repository.manager.findOneBy.mockImplementation((entity) =>
-      Promise.resolve(entity === StudyPlanAcademicCycle ? cycle : null),
+    repository.manager.findOne.mockImplementation(() =>
+      Promise.resolve(cycle),
     );
   });
 
@@ -54,7 +58,7 @@ describe('CourseSectionsService', () => {
     });
 
     it('rechaza si el plan/ciclo no existe', async () => {
-      repository.manager.findOneBy.mockResolvedValue(null);
+      repository.manager.findOne.mockResolvedValue(null);
 
       await expect(
         service.create({
@@ -63,6 +67,51 @@ describe('CourseSectionsService', () => {
           section: 'A',
         }),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('rechaza si el ciclo lectivo o el turno están inactivos', async () => {
+      repository.manager.findOne.mockResolvedValue({
+        ...cycle,
+        academicCycle: { id: 2, status: 'INACTIVO' },
+      });
+
+      await expect(
+        service.create({
+          studyPlanAcademicCycleId: 5,
+          courseYear: 2,
+          section: 'A',
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      repository.manager.findOne.mockResolvedValue({
+        ...cycle,
+        shift: { id: 3, status: 'INACTIVO' },
+      });
+
+      await expect(
+        service.create({
+          studyPlanAcademicCycleId: 5,
+          courseYear: 2,
+          section: 'A',
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('rechaza si el plan de estudio está archivado', async () => {
+      repository.manager.findOne.mockResolvedValue({
+        ...cycle,
+        studyPlan: { id: 1, status: 'ARCHIVADO' },
+      });
+
+      await expect(
+        service.create({
+          studyPlanAcademicCycleId: 5,
+          courseYear: 2,
+          section: 'A',
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(repository.save).not.toHaveBeenCalled();
     });
 
     it('rechaza courseYear inválido o sección vacía', async () => {
@@ -105,9 +154,14 @@ describe('CourseSectionsService', () => {
 
   describe('update', () => {
     it('cambia la división a otro plan/ciclo si se indica', async () => {
-      const otherCycle = { id: 9 };
+      const otherCycle = {
+        id: 9,
+        studyPlan: { id: 4, status: 'VIGENTE' },
+        academicCycle: { id: 6, status: 'ACTIVO' },
+        shift: { id: 7, status: 'ACTIVO' },
+      };
       repository.findOne.mockResolvedValue({ ...section });
-      repository.manager.findOneBy.mockResolvedValue(otherCycle);
+      repository.manager.findOne.mockResolvedValue(otherCycle);
       repository.save.mockImplementation((entity) => Promise.resolve(entity));
 
       const result = await service.update(1, {
@@ -125,7 +179,7 @@ describe('CourseSectionsService', () => {
 
       await service.update(1, { courseYear: 3 });
 
-      expect(repository.manager.findOneBy).not.toHaveBeenCalled();
+      expect(repository.manager.findOne).not.toHaveBeenCalled();
     });
   });
 

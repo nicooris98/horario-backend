@@ -305,6 +305,7 @@ export class TeacherAssignmentsService {
 
   // Reglas que dependen de las otras asignaciones con fechas que se cruzan.
   private async validate(draft: Draft, exceptId?: number) {
+    this.assertActiveCourseSectionSubject(draft.courseSectionSubject);
     const others: FindOptionsWhere<TeacherAssignment> = exceptId
       ? { id: Not(exceptId) }
       : {};
@@ -397,6 +398,25 @@ export class TeacherAssignmentsService {
     }
   }
 
+  // No se puede asignar docente sobre una división, materia o ECCD inactivos.
+  private assertActiveCourseSectionSubject(eccd: CourseSectionSubject) {
+    if (eccd.status !== 'ACTIVO') {
+      throw new BadRequestException(
+        `Course section subject ${eccd.id} is inactive`,
+      );
+    }
+    if (eccd.subject?.status !== 'ACTIVO') {
+      throw new BadRequestException(
+        `Subject ${eccd.subject.id} is inactive`,
+      );
+    }
+    if (eccd.courseSection?.status !== 'ACTIVO') {
+      throw new BadRequestException(
+        `Course section ${eccd.courseSection.id} is inactive`,
+      );
+    }
+  }
+
   private hasSubstitutes(id: number) {
     return this.repository.exists({
       where: { replacedAssignment: { id } },
@@ -406,7 +426,7 @@ export class TeacherAssignmentsService {
   private async findCourseSectionSubject(id: unknown) {
     const item = await this.repository.manager.findOne(CourseSectionSubject, {
       where: { id: requireInt(id, 'courseSectionSubjectId') },
-      relations: { subject: true },
+      relations: { subject: true, courseSection: true },
     });
     if (!item) {
       throw new NotFoundException(

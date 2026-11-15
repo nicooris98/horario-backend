@@ -38,6 +38,14 @@ describe('SchedulesService', () => {
       findOneBy: jest.fn((_entity: unknown, where: { id: number }) =>
         Promise.resolve({ id: where.id }),
       ),
+      findOne: jest.fn(() =>
+        Promise.resolve({
+          id: 10,
+          status: 'ACTIVO',
+          subject: { status: 'ACTIVO' },
+          courseSection: { status: 'ACTIVO' },
+        }),
+      ),
     },
   };
   const overlapService = { checkOverlap: jest.fn() };
@@ -62,7 +70,7 @@ describe('SchedulesService', () => {
         fechaHasta: '2026-06-30',
       });
       expect(repository.create).toHaveBeenCalledWith({
-        courseSectionSubject: { id: 10 },
+        courseSectionSubject: expect.objectContaining({ id: 10 }),
         semester: { id: 1 },
         classHour: { id: 2 },
         day: { id: 3 },
@@ -103,6 +111,21 @@ describe('SchedulesService', () => {
 
       await expect(service.create(validDto)).rejects.toThrow(
         NotFoundException,
+      );
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('lanza BadRequestException si el ECCD está inactivo', async () => {
+      overlapService.checkOverlap.mockResolvedValue([]);
+      repository.manager.findOne.mockResolvedValueOnce({
+        id: 10,
+        status: 'INACTIVO',
+        subject: { status: 'ACTIVO' },
+        courseSection: { status: 'ACTIVO' },
+      });
+
+      await expect(service.create(validDto)).rejects.toThrow(
+        BadRequestException,
       );
       expect(repository.save).not.toHaveBeenCalled();
     });
@@ -155,7 +178,7 @@ describe('SchedulesService', () => {
       });
       expect(repository.save).toHaveBeenCalledWith({
         id: 5,
-        courseSectionSubject: { id: 10 },
+        courseSectionSubject: expect.objectContaining({ id: 10 }),
         semester: { id: 1 },
         classHour: { id: 2 },
         day: { id: 3 },

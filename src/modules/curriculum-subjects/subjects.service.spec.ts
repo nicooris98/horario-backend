@@ -10,7 +10,12 @@ import { StudyPlan } from '../study-plans/entities/study-plans.entity';
 import { Regime } from '../regimes/entities/regime.entity';
 import { CreateAsignaturaDto } from './dto/create-asignatura.dto';
 
-const studyPlan = { id: 1, name: 'Plan 2026', durationYears: 5 };
+const studyPlan = {
+  id: 1,
+  name: 'Plan 2026',
+  durationYears: 5,
+  status: 'VIGENTE',
+};
 const regime = { id: 1, name: 'Cuatrimestral' };
 
 const validDto: CreateAsignaturaDto = {
@@ -118,6 +123,21 @@ describe('SubjectsService', () => {
       expect(repository.save).not.toHaveBeenCalled();
     });
 
+    it('rechaza crear una materia en un plan archivado', async () => {
+      mockRefs();
+      repository.manager.findOneBy.mockImplementation((entity) => {
+        if (entity === StudyPlan)
+          return Promise.resolve({ ...studyPlan, status: 'ARCHIVADO' });
+        if (entity === Regime) return Promise.resolve(regime);
+        return Promise.resolve(null);
+      });
+
+      await expect(service.create(validDto)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
     it('rechaza plan de estudio inexistente', async () => {
       repository.manager.findOneBy.mockImplementation((entity) => {
         if (entity === Regime) return Promise.resolve(regime);
@@ -179,6 +199,20 @@ describe('SubjectsService', () => {
         'subject.id_espacio_curricular != :excludeSubjectId',
         { excludeSubjectId: 7 },
       );
+    });
+
+    it('rechaza mover la materia a un plan archivado', async () => {
+      repository.findOne.mockResolvedValue({ ...subject });
+      repository.manager.findOneBy.mockImplementation((entity) => {
+        if (entity === StudyPlan)
+          return Promise.resolve({ ...studyPlan, id: 2, status: 'ARCHIVADO' });
+        return Promise.resolve(null);
+      });
+
+      await expect(
+        service.update(7, { studyPlanId: 2 }),
+      ).rejects.toThrow(BadRequestException);
+      expect(repository.save).not.toHaveBeenCalled();
     });
 
     it('rechaza un año de cursado inválido para el plan', async () => {

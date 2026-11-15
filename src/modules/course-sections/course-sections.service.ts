@@ -1,14 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   deactivate,
-  findRef,
   pick,
   requireInt,
   requireText,
 } from '../../common/helpers';
 import { UpdateStatusDto } from '../../common/dto/update-status.dto';
+import { STUDY_PLAN_STATUS } from '../study-plans/study-plan-status';
 import { StudyPlanAcademicCycle } from '../study-plan-academic-cycles/entities/study-plan-academic-cycle.entity';
 import { CreateCourseSectionDto } from './dto/create-course-section.dto';
 import { UpdateCourseSectionDto } from './dto/update-course-section.dto';
@@ -79,13 +79,33 @@ export class CourseSectionsService {
     );
   }
 
-  private findCycle(id: number) {
-    return findRef(
-      this.repository.manager,
+  private async findCycle(id: number) {
+    const cycle = await this.repository.manager.findOne(
       StudyPlanAcademicCycle,
-      id,
-      'Study plan academic cycle',
+      {
+        where: { id: requireInt(id, 'studyPlanAcademicCycleId') },
+        relations: { studyPlan: true, academicCycle: true, shift: true },
+      },
     );
+    if (!cycle) {
+      throw new NotFoundException(
+        `Study plan academic cycle ${id} not found`,
+      );
+    }
+    if (cycle.academicCycle.status !== 'ACTIVO') {
+      throw new BadRequestException(
+        `Academic cycle ${cycle.academicCycle.id} is inactive`,
+      );
+    }
+    if (cycle.shift.status !== 'ACTIVO') {
+      throw new BadRequestException(`Shift ${cycle.shift.id} is inactive`);
+    }
+    if (cycle.studyPlan.status === STUDY_PLAN_STATUS.ARCHIVADO) {
+      throw new BadRequestException(
+        'No se pueden crear divisiones en un plan de estudio archivado',
+      );
+    }
+    return cycle;
   }
 
   private validate(s: Pick<CourseSection, 'courseYear' | 'section'>) {

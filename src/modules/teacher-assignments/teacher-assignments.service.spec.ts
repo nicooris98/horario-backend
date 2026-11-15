@@ -29,11 +29,14 @@ const otherTeacher = { id: 3, status: 'ACTIVO' };
 
 const courseSectionSubject = {
   id: 10,
+  status: 'ACTIVO',
   subject: {
     weeklyHours: 4,
     allowsMultipleTeachers: false,
     maxTeachers: null,
+    status: 'ACTIVO',
   },
+  courseSection: { id: 5, status: 'ACTIVO' },
 };
 
 const validDto: CreateTeacherAssignmentDto = {
@@ -49,7 +52,7 @@ const titular = {
   id: 7,
   teacher: { id: 1 },
   positionType: { name: 'Titular', allowsSubstitute: true },
-  courseSectionSubject: { id: 10 },
+  courseSectionSubject,
   weeklyHours: 4,
   startDate: '2026-01-01',
   endDate: '2026-12-31',
@@ -137,6 +140,40 @@ describe('TeacherAssignmentsService', () => {
       await expect(
         service.create({ ...validDto, weeklyHours: 5 }),
       ).rejects.toThrow(BadRequestException);
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('rechaza asignar sobre un ECCD, materia o división inactivos', async () => {
+      mockRefs();
+      repository.manager.findOne.mockResolvedValue({
+        ...courseSectionSubject,
+        status: 'INACTIVO',
+      });
+
+      await expect(service.create(validDto)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repository.save).not.toHaveBeenCalled();
+
+      mockRefs();
+      repository.manager.findOne.mockResolvedValue({
+        ...courseSectionSubject,
+        subject: { ...courseSectionSubject.subject, status: 'INACTIVO' },
+      });
+
+      await expect(service.create(validDto)).rejects.toThrow(
+        BadRequestException,
+      );
+
+      mockRefs();
+      repository.manager.findOne.mockResolvedValue({
+        ...courseSectionSubject,
+        courseSection: { id: 5, status: 'INACTIVO' },
+      });
+
+      await expect(service.create(validDto)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(repository.save).not.toHaveBeenCalled();
     });
 

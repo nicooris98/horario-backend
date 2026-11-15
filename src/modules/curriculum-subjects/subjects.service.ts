@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { findRef, pick } from '../../common/helpers';
+import { STUDY_PLAN_STATUS } from '../study-plans/study-plan-status';
 import { Regime } from '../regimes/entities/regime.entity';
 import { StudyPlan } from '../study-plans/entities/study-plans.entity';
 import { CreateAsignaturaDto } from './dto/create-asignatura.dto';
@@ -43,6 +44,7 @@ export class SubjectsService {
       'Study plan',
     );
     const regime = await findRef(manager, Regime, dto.regimeId, 'Regime');
+    this.assertPlanNotArchived(studyPlan);
 
     this.validateSubjectData(dto, studyPlan.durationYears);
     await this.assertUniqueNameInPlan(normalizedName, studyPlan.id);
@@ -98,6 +100,7 @@ export class SubjectsService {
         dto.studyPlanId,
         'Study plan',
       );
+      this.assertPlanNotArchived(subject.studyPlan);
     }
     if (dto.regimeId !== undefined) {
       subject.regime = await findRef(manager, Regime, dto.regimeId, 'Regime');
@@ -160,6 +163,14 @@ export class SubjectsService {
 
     subject.status = 'INACTIVO';
     return this.repository.save(subject);
+  }
+
+  private assertPlanNotArchived(plan: StudyPlan) {
+    if (plan.status === STUDY_PLAN_STATUS.ARCHIVADO) {
+      throw new BadRequestException(
+        'No se pueden gestionar materias de un plan de estudio archivado',
+      );
+    }
   }
 
   private resolveMaxTeachers(

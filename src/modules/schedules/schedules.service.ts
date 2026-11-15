@@ -1,11 +1,11 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Schedule } from './entities/schedule.entity';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
 import { ScheduleOverlapService } from './schedule-overlap.service';
-import { findRef, requireDateOrder } from '../../common/helpers';
+import { findRef, requireDateOrder, requireInt } from '../../common/helpers';
 import { CourseSectionSubject } from '../course-section-subjects/entities/course-section-subject.entity';
 import { Semester } from '../semesters/entities/semester.entity';
 import { ClassHour } from '../class-hours/entities/class-hour.entity';
@@ -149,6 +149,32 @@ export class SchedulesService {
     return this.repository.save(schedule);
   }
 
+  // El ECCD debe existir y tener activos el espacio curricular y la división
+  // para que se le puedan cargar horarios.
+  private async findActiveEccd(id: number) {
+    const eccd = await this.repository.manager.findOne(CourseSectionSubject, {
+      where: { id: requireInt(id, 'idCursado') },
+      relations: { subject: true, courseSection: true },
+    });
+    if (!eccd) {
+      throw new NotFoundException(`Course section subject ${id} not found`);
+    }
+    if (eccd.status !== 'ACTIVO') {
+      throw new BadRequestException(
+        `Course section subject ${eccd.id} is inactive`,
+      );
+    }
+    if (eccd.subject?.status !== 'ACTIVO') {
+      throw new BadRequestException(`Subject ${eccd.subject.id} is inactive`);
+    }
+    if (eccd.courseSection?.status !== 'ACTIVO') {
+      throw new BadRequestException(
+        `Course section ${eccd.courseSection.id} is inactive`,
+      );
+    }
+    return eccd;
+  }
+
   private resolveRefs(ids: {
     idCursado: number;
     idCuatrimestre: number;
@@ -157,7 +183,7 @@ export class SchedulesService {
   }) {
     const manager = this.repository.manager;
     return Promise.all([
-      findRef(manager, CourseSectionSubject, ids.idCursado, 'Course section subject'),
+      this.findActiveEccd(ids.idCursado),
       findRef(manager, Semester, ids.idCuatrimestre, 'Semester'),
       findRef(manager, ClassHour, ids.idHoraCatedra, 'Class hour'),
       findRef(manager, Day, ids.idDia, 'Day'),
