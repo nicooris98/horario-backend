@@ -1,12 +1,15 @@
-import { NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { PermissionsService } from './permissions.service';
 import { Permission } from './entities/permission.entity';
 
 const permission = {
   id: 1,
-  name: 'Ver roles',
-  code: 'roles.read',
+  name: 'Ver docentes',
+  code: 'teachers.read',
   isActive: true,
 };
 
@@ -25,11 +28,11 @@ describe('PermissionsService', () => {
 
   describe('create', () => {
     it('crea y guarda un permiso', async () => {
-      await service.create({ name: 'Ver roles', code: 'roles.read' });
+      await service.create({ name: 'Ver docentes', code: 'teachers.read' });
 
       expect(repository.create).toHaveBeenCalledWith({
-        name: 'Ver roles',
-        code: 'roles.read',
+        name: 'Ver docentes',
+        code: 'teachers.read',
       });
       expect(repository.save).toHaveBeenCalled();
     });
@@ -64,10 +67,10 @@ describe('PermissionsService', () => {
       repository.findOne.mockResolvedValue({ ...permission });
       repository.save.mockImplementation((entity) => Promise.resolve(entity));
 
-      const result = await service.update(1, { name: 'Editar roles' });
+      const result = await service.update(1, { name: 'Editar docentes' });
 
-      expect(result.name).toBe('Editar roles');
-      expect(result.code).toBe('roles.read');
+      expect(result.name).toBe('Editar docentes');
+      expect(result.code).toBe('teachers.read');
     });
 
     it('lanza NotFoundException si el permiso no existe', async () => {
@@ -98,6 +101,54 @@ describe('PermissionsService', () => {
       const result = await service.setActive(1, true);
 
       expect(result.isActive).toBe(true);
+    });
+
+    it('rechaza desactivar un permiso crítico de administración', async () => {
+      repository.findOne.mockResolvedValue({
+        ...permission,
+        code: 'users.read',
+      });
+
+      await expect(service.setActive(1, false)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('permisos críticos', () => {
+    it('rechaza cambiar el code de un permiso crítico', async () => {
+      repository.findOne.mockResolvedValue({
+        ...permission,
+        code: 'roles.read',
+      });
+
+      await expect(
+        service.update(1, { code: 'roles.custom' }),
+      ).rejects.toThrow(ConflictException);
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('permite cambiar el nombre de un permiso crítico', async () => {
+      repository.findOne.mockResolvedValue({
+        ...permission,
+        code: 'roles.read',
+      });
+      repository.save.mockImplementation((entity) => Promise.resolve(entity));
+
+      const result = await service.update(1, { name: 'Ver roles admin' });
+
+      expect(result.name).toBe('Ver roles admin');
+      expect(result.code).toBe('roles.read');
+    });
+
+    it('permite desactivar un permiso no crítico', async () => {
+      repository.findOne.mockResolvedValue({ ...permission });
+      repository.save.mockImplementation((entity) => Promise.resolve(entity));
+
+      const result = await service.setActive(1, false);
+
+      expect(result.isActive).toBe(false);
     });
   });
 });

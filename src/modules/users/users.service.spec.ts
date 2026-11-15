@@ -44,6 +44,7 @@ describe('UsersService - asignación de roles', () => {
       );
     }),
     save: jest.fn(),
+    createQueryBuilder: jest.fn(),
     manager: {
       transaction: jest.fn(async (cb) => {
         inTransaction = true;
@@ -242,6 +243,56 @@ describe('UsersService - asignación de roles', () => {
       expect(userRepository.manager.transaction).not.toHaveBeenCalled();
       expectNoWrites();
     });
+
+    it('rechaza quitar el rol admin al último administrador activo', async () => {
+      storedUser = {
+        id: 10,
+        firstName: 'Admin',
+        lastName: 'Uno',
+        email: 'admin@test.com',
+        isActive: true,
+        isDisabled: false,
+        roles: [{ id: 1, name: 'admin', isActive: true } as Role],
+      };
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+      };
+      userRepository.createQueryBuilder.mockReturnValue(qb);
+
+      const error = await service
+        .update(10, { role_ids: [2] })
+        .catch((e) => e);
+
+      expect(error).toBeInstanceOf(BadRequestException);
+      expect(error.message).toContain('sin administradores activos');
+      expectNoWrites();
+    });
+
+    it('permite quitar el rol admin si queda otro administrador activo', async () => {
+      storedUser = {
+        id: 10,
+        firstName: 'Admin',
+        lastName: 'Uno',
+        email: 'admin@test.com',
+        isActive: true,
+        isDisabled: false,
+        roles: [{ id: 1, name: 'admin', isActive: true } as Role],
+      };
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      userRepository.createQueryBuilder.mockReturnValue(qb);
+
+      await service.update(10, { role_ids: [2] });
+
+      expect(txManager.save).toHaveBeenCalled();
+    });
   });
 });
 
@@ -249,7 +300,7 @@ describe('Concurrencia entre asignacion y desactivacion de roles', () => {
   // Simula los bloqueos de fila de Postgres: FOR SHARE es compartido y
   // FOR UPDATE espera a que se liberen todos los FOR SHARE (y viceversa).
   const createDb = () => {
-    const role = { id: 1, name: 'ADMIN', isActive: true };
+    const role = { id: 1, name: 'docente', isActive: true };
     const events: string[] = [];
     let sharedHolders = 0;
     let exclusive = false;
