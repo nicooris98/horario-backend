@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { findRef, removeOrConflict } from '../../common/helpers';
@@ -21,6 +25,7 @@ export class StudyPlanAcademicCyclesService {
   async create(dto: CreateStudyPlanAcademicCycleDto) {
     const item = this.repository.create();
     await this.assignRefs(item, dto);
+    await this.requireUniqueCombination(item);
     return this.repository.save(item);
   }
 
@@ -42,6 +47,7 @@ export class StudyPlanAcademicCyclesService {
   async update(id: number, dto: UpdateStudyPlanAcademicCycleDto) {
     const item = await this.findOne(id);
     await this.assignRefs(item, dto);
+    await this.requireUniqueCombination(item);
     return this.repository.save(item);
   }
 
@@ -59,7 +65,12 @@ export class StudyPlanAcademicCyclesService {
   ) {
     const m = this.repository.manager;
     if (dto.studyPlanId !== undefined || !item.studyPlan) {
-      item.studyPlan = await findRef(m, StudyPlan, dto.studyPlanId, 'Study plan');
+      item.studyPlan = await findRef(
+        m,
+        StudyPlan,
+        dto.studyPlanId,
+        'Study plan',
+      );
     }
     if (dto.academicCycleId !== undefined || !item.academicCycle) {
       item.academicCycle = await findRef(
@@ -71,6 +82,21 @@ export class StudyPlanAcademicCyclesService {
     }
     if (dto.shiftId !== undefined || !item.shift) {
       item.shift = await findRef(m, Shift, dto.shiftId, 'Shift');
+    }
+  }
+
+  private async requireUniqueCombination(item: StudyPlanAcademicCycle) {
+    const existing = await this.repository.findOne({
+      where: {
+        studyPlan: { id: item.studyPlan.id },
+        academicCycle: { id: item.academicCycle.id },
+        shift: { id: item.shift.id },
+      },
+    });
+    if (existing && existing.id !== item.id) {
+      throw new ConflictException(
+        `Study plan ${item.studyPlan.id} already has an entry for academic cycle ${item.academicCycle.id} and shift ${item.shift.id} (id ${existing.id})`,
+      );
     }
   }
 }

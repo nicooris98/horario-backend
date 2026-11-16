@@ -22,9 +22,7 @@ export class ClassHoursService {
 
   create(dto: CreateClassHourDto) {
     this.validate(dto);
-    return this.repository.save(
-      this.repository.create(pick(dto, [...FIELDS])),
-    );
+    return this.repository.save(this.repository.create(pick(dto, [...FIELDS])));
   }
 
   findAll() {

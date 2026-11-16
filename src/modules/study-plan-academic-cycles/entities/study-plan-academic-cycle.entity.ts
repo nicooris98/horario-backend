@@ -1,4 +1,10 @@
-import { Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { AcademicCycle } from '../../academic-cycles/entities/academic-cycle.entity';
 import { CourseSection } from '../../course-sections/entities/course-section.entity';
 import { Shift } from '../../shifts/entities/shift.entity';

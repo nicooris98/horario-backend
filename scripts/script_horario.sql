@@ -428,3 +428,121 @@ ALTER TABLE "plan_estudio_ciclo_lectivo" ALTER COLUMN "id_plan_estudio" SET NOT 
 ALTER TABLE "plan_estudio_ciclo_lectivo" ALTER COLUMN "id_ciclo_lectivo" SET NOT NULL;
 ALTER TABLE "plan_estudio_ciclo_lectivo" ALTER COLUMN "id_turno" SET NOT NULL;
 ALTER TABLE "curso_division" ALTER COLUMN "id_plan_estudio_ciclo_lectivo" SET NOT NULL;
+
+-- =========================================================
+-- MIGRACION: DEFAULT 'ACTIVO' EN COLUMNAS ESTADO
+-- Sin DEFAULT, un insert que no setee estado queda en NULL
+-- =========================================================
+ALTER TABLE "ciclo_lectivo" ALTER COLUMN "estado" SET DEFAULT 'ACTIVO';
+ALTER TABLE "turno" ALTER COLUMN "estado" SET DEFAULT 'ACTIVO';
+ALTER TABLE "espacio_curricular" ALTER COLUMN "estado" SET DEFAULT 'ACTIVO';
+ALTER TABLE "curso_division" ALTER COLUMN "estado" SET DEFAULT 'ACTIVO';
+ALTER TABLE "espacio_curricular_curso_division" ALTER COLUMN "estado" SET DEFAULT 'ACTIVO';
+
+-- =========================================================
+-- MIGRACION: UNICIDAD plan_estudio_ciclo_lectivo
+-- Un plan de estudio solo puede vincularse una vez por ciclo y turno
+-- =========================================================
+CREATE UNIQUE INDEX IF NOT EXISTS uq_plan_estudio_ciclo_lectivo
+ON "plan_estudio_ciclo_lectivo" ("id_plan_estudio", "id_ciclo_lectivo", "id_turno");
+-- =========================================================
+-- MIGRACION: UNICIDAD DE MATERIAS POR PLAN (case-insensitive)
+-- El servicio valida con LOWER(TRIM(nombre)); este indice cubre la misma
+-- regla a nivel BD. Si falla por duplicados existentes, limpiarlos antes:
+--   SELECT id_plan_estudio, LOWER(TRIM(nombre)), COUNT(*)
+--   FROM espacio_curricular GROUP BY 1, 2 HAVING COUNT(*) > 1;
+-- =========================================================
+CREATE UNIQUE INDEX IF NOT EXISTS uq_espacio_curricular_plan_nombre_ci
+ON "espacio_curricular" ("id_plan_estudio", LOWER(TRIM("nombre")));
+
+-- =========================================================
+-- MIGRACION: UNICIDAD Y NOT NULL (integridad a nivel BD)
+-- Estas constraints son la red de seguridad final: la API ya valida
+-- la mayoria de estos casos, pero un INSERT manual o una carrera
+-- entre check y save ya no puede generar duplicados.
+-- Los UNIQUE usan indices (IF NOT EXISTS) para ser idempotentes.
+-- =========================================================
+
+-- Normalizar estado NULL suelto antes de exigir NOT NULL
+UPDATE plan_estudio SET estado = 'NO_VIGENTE' WHERE estado IS NULL;
+
+-- ---------- NOT NULL ----------
+-- Columnas descriptivas y de estado (verificado: sin NULLs en datos actuales)
+ALTER TABLE "carrera" ALTER COLUMN "nombre" SET NOT NULL;
+ALTER TABLE "carrera" ALTER COLUMN "estado" SET NOT NULL;
+ALTER TABLE "regimen" ALTER COLUMN "nombre" SET NOT NULL;
+ALTER TABLE "dia" ALTER COLUMN "nombre" SET NOT NULL;
+ALTER TABLE "turno" ALTER COLUMN "nombre" SET NOT NULL;
+ALTER TABLE "turno" ALTER COLUMN "hora_inicio" SET NOT NULL;
+ALTER TABLE "turno" ALTER COLUMN "hora_fin" SET NOT NULL;
+ALTER TABLE "turno" ALTER COLUMN "estado" SET NOT NULL;
+ALTER TABLE "tipo_cargo" ALTER COLUMN "nombre" SET NOT NULL;
+ALTER TABLE "tipo_cargo" ALTER COLUMN "estado" SET NOT NULL;
+ALTER TABLE "ciclo_lectivo" ALTER COLUMN "anio" SET NOT NULL;
+ALTER TABLE "ciclo_lectivo" ALTER COLUMN "fecha_inicio" SET NOT NULL;
+ALTER TABLE "ciclo_lectivo" ALTER COLUMN "fecha_fin" SET NOT NULL;
+ALTER TABLE "ciclo_lectivo" ALTER COLUMN "estado" SET NOT NULL;
+ALTER TABLE "hora_catedra" ALTER COLUMN "numero_franja" SET NOT NULL;
+ALTER TABLE "hora_catedra" ALTER COLUMN "hora_desde" SET NOT NULL;
+ALTER TABLE "hora_catedra" ALTER COLUMN "hora_hasta" SET NOT NULL;
+ALTER TABLE "cuatrimestre" ALTER COLUMN "nombre" SET NOT NULL;
+ALTER TABLE "cuatrimestre" ALTER COLUMN "numero" SET NOT NULL;
+ALTER TABLE "cuatrimestre" ALTER COLUMN "fecha_desde" SET NOT NULL;
+ALTER TABLE "cuatrimestre" ALTER COLUMN "fecha_hasta" SET NOT NULL;
+ALTER TABLE "docente" ALTER COLUMN "nombre" SET NOT NULL;
+ALTER TABLE "docente" ALTER COLUMN "apellido" SET NOT NULL;
+ALTER TABLE "docente" ALTER COLUMN "estado" SET NOT NULL;
+ALTER TABLE "plan_estudio" ALTER COLUMN "id_carrera" SET NOT NULL;
+ALTER TABLE "plan_estudio" ALTER COLUMN "nombre" SET NOT NULL;
+ALTER TABLE "plan_estudio" ALTER COLUMN "anio_vigencia" SET NOT NULL;
+ALTER TABLE "plan_estudio" ALTER COLUMN "fecha_desde" SET NOT NULL;
+ALTER TABLE "plan_estudio" ALTER COLUMN "estado" SET NOT NULL;
+ALTER TABLE "espacio_curricular" ALTER COLUMN "id_plan_estudio" SET NOT NULL;
+ALTER TABLE "espacio_curricular" ALTER COLUMN "id_regimen" SET NOT NULL;
+ALTER TABLE "espacio_curricular" ALTER COLUMN "nombre" SET NOT NULL;
+ALTER TABLE "espacio_curricular" ALTER COLUMN "anio_cursado" SET NOT NULL;
+ALTER TABLE "espacio_curricular" ALTER COLUMN "horas_semanales" SET NOT NULL;
+ALTER TABLE "espacio_curricular" ALTER COLUMN "estado" SET NOT NULL;
+ALTER TABLE "curso_division" ALTER COLUMN "id_plan_estudio_ciclo_lectivo" SET NOT NULL;
+ALTER TABLE "curso_division" ALTER COLUMN "anio_cursado" SET NOT NULL;
+ALTER TABLE "curso_division" ALTER COLUMN "division" SET NOT NULL;
+ALTER TABLE "curso_division" ALTER COLUMN "estado" SET NOT NULL;
+ALTER TABLE "espacio_curricular_curso_division" ALTER COLUMN "id_curso_division" SET NOT NULL;
+ALTER TABLE "espacio_curricular_curso_division" ALTER COLUMN "id_espacio_cursado" SET NOT NULL;
+ALTER TABLE "espacio_curricular_curso_division" ALTER COLUMN "estado" SET NOT NULL;
+ALTER TABLE "asignacion_docente" ALTER COLUMN "id_espacio_curricular_curso_division" SET NOT NULL;
+ALTER TABLE "asignacion_docente" ALTER COLUMN "id_tipo_cargo" SET NOT NULL;
+ALTER TABLE "asignacion_docente" ALTER COLUMN "id_docente" SET NOT NULL;
+ALTER TABLE "asignacion_docente" ALTER COLUMN "horas_semanales" SET NOT NULL;
+ALTER TABLE "asignacion_docente" ALTER COLUMN "fecha_desde" SET NOT NULL;
+ALTER TABLE "horario" ALTER COLUMN "id_cursado" SET NOT NULL;
+ALTER TABLE "horario" ALTER COLUMN "id_cuatrimestre" SET NOT NULL;
+ALTER TABLE "horario" ALTER COLUMN "id_hora_catedra" SET NOT NULL;
+ALTER TABLE "horario" ALTER COLUMN "id_dia" SET NOT NULL;
+ALTER TABLE "horario" ALTER COLUMN "fecha_desde" SET NOT NULL;
+
+-- ---------- UNIQUE ----------
+-- Nombres unicos de catalogos
+CREATE UNIQUE INDEX IF NOT EXISTS uq_carrera_nombre ON "carrera" ("nombre");
+CREATE UNIQUE INDEX IF NOT EXISTS uq_regimen_nombre ON "regimen" ("nombre");
+CREATE UNIQUE INDEX IF NOT EXISTS uq_dia_nombre ON "dia" ("nombre");
+CREATE UNIQUE INDEX IF NOT EXISTS uq_turno_nombre ON "turno" ("nombre");
+CREATE UNIQUE INDEX IF NOT EXISTS uq_tipo_cargo_nombre ON "tipo_cargo" ("nombre");
+CREATE UNIQUE INDEX IF NOT EXISTS uq_cuatrimestre_nombre ON "cuatrimestre" ("nombre");
+
+-- Un ciclo lectivo por anio
+CREATE UNIQUE INDEX IF NOT EXISTS uq_ciclo_lectivo_anio ON "ciclo_lectivo" ("anio");
+
+-- Un numero de franja por hora catedra
+CREATE UNIQUE INDEX IF NOT EXISTS uq_hora_catedra_franja ON "hora_catedra" ("numero_franja");
+
+-- Una division por (plan/ciclo/turno, anio, division)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_curso_division_composicion
+ON "curso_division" ("id_plan_estudio_ciclo_lectivo", "anio_cursado", "division");
+
+-- Un espacio curricular solo una vez por division
+CREATE UNIQUE INDEX IF NOT EXISTS uq_eccd_curso_materia
+ON "espacio_curricular_curso_division" ("id_curso_division", "id_espacio_cursado");
+
+-- asignacion_docente y horario NO llevan UNIQUE: su unicidad es temporal
+-- (fechas de vigencia) y la valida la API con logica de solapamiento.

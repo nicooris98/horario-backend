@@ -54,7 +54,7 @@ export class User extends AuditEntity {
     default: true,
   })
   isActive: boolean;
-  
+
   @Column({
     name: 'is_disabled',
     type: 'boolean',

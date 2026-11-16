@@ -12,7 +12,7 @@ import { Role } from '../roles/entities/role.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { CreateDashboardUserDto } from './dto/create-dashboard-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { RoleName } from '../../common/constants/roles';
+import { RoleName, isAdminRoleName } from '../../common/constants/roles';
 import { UserActivationService } from './activation/user-activation.service';
 
 @Injectable()
@@ -23,7 +23,7 @@ export class UsersService {
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
     private readonly activationService: UserActivationService,
-  ) { }
+  ) {}
 
   async create(createUserDto: CreateUserDto) {
     const existingUser = await this.findOneByEmail(createUserDto.email);
@@ -61,8 +61,6 @@ export class UsersService {
       throw new ConflictException('Ya existe un usuario con ese email');
     }
 
-
-
     const { savedId, delivery } = await this.userRepository.manager.transaction(
       async (manager) => {
         // Validar roles dentro de la transaccion, bloqueandolos (FOR SHARE)
@@ -70,7 +68,6 @@ export class UsersService {
         const roles = dto.role_ids
           ? await this.resolveActiveRoles(manager, dto.role_ids)
           : undefined;
-
 
         const user = manager.create(User, {
           firstName: dto.first_name,
@@ -80,7 +77,6 @@ export class UsersService {
           password: null,
           isActive: false,
         });
-
 
         if (roles) {
           user.roles = roles;
@@ -108,7 +104,6 @@ export class UsersService {
 
   resendActivationCode(email: string): Promise<{ message: string }> {
     return this.activationService.resendCode(email);
-
   }
 
   findAll() {
@@ -160,6 +155,9 @@ export class UsersService {
 
   async update(id: number, updateUserDto: UpdateUserDto, actorId?: number) {
     const user = await this.findOne(id);
+    const hadAdminRole = (user.roles ?? []).some((role) =>
+      isAdminRoleName(role.name),
+    );
 
     if (updateUserDto.first_name !== undefined) {
       user.firstName = updateUserDto.first_name;
@@ -220,6 +218,7 @@ export class UsersService {
           manager,
           updateUserDto.role_ids,
         );
+        await this.assertKeepsActiveAdmin(user, hadAdminRole);
       }
       await manager.save(User, user);
     });
@@ -236,7 +235,6 @@ export class UsersService {
 
     return this.findOne(id);
   }
-
 
   async ensureConfiguredAdmin(
     manager: EntityManager,
@@ -300,7 +298,6 @@ export class UsersService {
     return { created, roleAssigned: true };
   }
 
-
   private async resolveActiveRoles(
     manager: EntityManager,
     roleIds: number[],
@@ -312,18 +309,18 @@ export class UsersService {
       uniqueIds.length === 0
         ? []
         : await manager.find(Role, {
-          where: { id: In(uniqueIds) },
-          lock: { mode: 'pessimistic_read' },
-          order: { id: 'ASC' },
-        });
+            where: { id: In(uniqueIds) },
+            lock: { mode: 'pessimistic_read' },
+            order: { id: 'ASC' },
+          });
 
     if (roles.length !== uniqueIds.length) {
       const found = new Set(roles.map((role) => role.id));
       const missing = uniqueIds.filter((roleId) => !found.has(roleId));
 
-      throw new BadRequestException(`Roles inexistentes: ${missing.join(', ')}`);
-
-
+      throw new BadRequestException(
+        `Roles inexistentes: ${missing.join(', ')}`,
+      );
     }
 
     const inactivos = roles.filter((role) => !role.isActive);
@@ -335,27 +332,54 @@ export class UsersService {
     return roles;
   }
 
+  // Si el usuario era admin y queda activo pero sin el rol admin, tiene que
+  // quedar al menos otro administrador activo en el sistema.
+  private async assertKeepsActiveAdmin(user: User, hadAdminRole: boolean) {
+    if (!hadAdminRole || !user.isActive || user.isDisabled) {
+      return;
+    }
+    const keepsAdminRole = (user.roles ?? []).some((role) =>
+      isAdminRoleName(role.name),
+    );
+    if (keepsAdminRole) {
+      return;
+    }
+    const otherAdmins = await this.countActiveAdmins(user.id);
+    if (otherAdmins === 0) {
+      throw new BadRequestException(
+        'No se puede quitar el rol admin: el sistema quedaría sin administradores activos',
+      );
+    }
+  }
+
+  private async countActiveAdmins(excludeUserId?: number) {
+    const query = this.userRepository
+      .createQueryBuilder('user')
+      .innerJoin('user.roles', 'role')
+      .where('LOWER(role.name) = :name', { name: RoleName.ADMIN })
+      .andWhere('user.isActive = :isActive', { isActive: true })
+      .andWhere('role.isActive = :roleActive', { roleActive: true })
+      .andWhere('user.isDisabled = :isDisabled', { isDisabled: false });
+    if (excludeUserId !== undefined) {
+      query.andWhere('user.id != :excludeUserId', { excludeUserId });
+    }
+    return query.getCount();
+  }
+
   private async assertCanDeactivate(user: User, actorId?: number) {
     if (actorId != null && user.id === actorId) {
       throw new BadRequestException('No puede desactivar su propia cuenta');
     }
 
     const isAdmin = (user.roles ?? []).some(
-      (role) => role.name === RoleName.ADMIN && role.isActive,
+      (role) => isAdminRoleName(role.name) && role.isActive,
     );
 
     if (!isAdmin || !user.isActive) {
       return;
     }
 
-    const adminCount = await this.userRepository
-      .createQueryBuilder('user')
-      .innerJoin('user.roles', 'role')
-      .where('role.name = :name', { name: RoleName.ADMIN })
-      .andWhere('user.isActive = :isActive', { isActive: true })
-      .andWhere('role.isActive = :roleActive', { roleActive: true })
-      .andWhere('user.isDisabled = :isDisabled', { isDisabled: false })
-      .getCount();
+    const adminCount = await this.countActiveAdmins();
 
     if (adminCount <= 1) {
       throw new BadRequestException(

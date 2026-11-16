@@ -19,7 +19,10 @@ import { Subject } from '../curriculum-subjects/entities/subject.entity';
 import { CreateStudyPlanDto } from './dto/create-study-plans.dto';
 import { UpdateStudyPlanDto } from './dto/update-study-plans.dto';
 import { StudyPlan } from './entities/study-plans.entity';
-import { STUDY_PLAN_STATUS, STUDY_PLAN_STATUS_VALUES } from './study-plan-status';
+import {
+  STUDY_PLAN_STATUS,
+  STUDY_PLAN_STATUS_VALUES,
+} from './study-plan-status';
 
 const FIELDS = [
   'name',
@@ -42,7 +45,9 @@ export class StudyPlanService {
 
     const status = dto.status ?? STUDY_PLAN_STATUS.VIGENTE;
     if (status === STUDY_PLAN_STATUS.ARCHIVADO) {
-      throw new BadRequestException('Un plan de estudio no se puede crear archivado.');
+      throw new BadRequestException(
+        'Un plan de estudio no se puede crear archivado.',
+      );
     }
 
     const degree = await findRef(
@@ -150,10 +155,14 @@ export class StudyPlanService {
 
   private assertStatusChange(from: string, to: string) {
     if (from === STUDY_PLAN_STATUS.ARCHIVADO) {
-      throw new ConflictException('Un plan archivado no puede volver a otro estado.');
+      throw new ConflictException(
+        'Un plan archivado no puede volver a otro estado.',
+      );
     }
     if (to === STUDY_PLAN_STATUS.ARCHIVADO) {
-      throw new ConflictException('Para archivar un plan usá la acción "Archivar plan".');
+      throw new ConflictException(
+        'Para archivar un plan usá la acción "Archivar plan".',
+      );
     }
   }
 
@@ -199,7 +208,10 @@ export class StudyPlanService {
     requirePositive(plan.durationYears, 'durationYears');
     requireInt(plan.validityYear, 'validityYear');
     requireDateOrder(plan.startDate, plan.endDate, 'startDate', 'endDate');
-    if (plan.status !== undefined && !STUDY_PLAN_STATUS_VALUES.includes(plan.status)) {
+    if (
+      plan.status !== undefined &&
+      !STUDY_PLAN_STATUS_VALUES.includes(plan.status)
+    ) {
       throw new BadRequestException(
         `Estado inválido. Valores permitidos: ${STUDY_PLAN_STATUS_VALUES.join(', ')}.`,
       );

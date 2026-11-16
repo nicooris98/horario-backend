@@ -5,9 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Degree } from './entities/degrees.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Degree])
-  ],
+  imports: [TypeOrmModule.forFeature([Degree])],
   controllers: [DegreeController],
   providers: [DegreeService],
 })

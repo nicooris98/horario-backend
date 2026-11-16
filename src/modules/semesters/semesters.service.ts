@@ -24,7 +24,10 @@ export class SemestersService {
   create(dto: CreateSemesterDto) {
     this.validate(dto);
     return this.repository.save(
-      this.repository.create({ ...pick(dto, [...FIELDS]), name: dto.name.trim() }),
+      this.repository.create({
+        ...pick(dto, [...FIELDS]),
+        name: dto.name.trim(),
+      }),
     );
   }
 

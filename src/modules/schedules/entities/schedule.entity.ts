@@ -1,4 +1,10 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { CourseSectionSubject } from '../../course-section-subjects/entities/course-section-subject.entity';
 import { Semester } from '../../semesters/entities/semester.entity';
 import { ClassHour } from '../../class-hours/entities/class-hour.entity';
@@ -9,7 +15,10 @@ export class Schedule {
   @PrimaryGeneratedColumn({ name: 'id_horario' })
   id: number;
 
-  @ManyToOne(() => CourseSectionSubject, { nullable: false, onDelete: 'RESTRICT' })
+  @ManyToOne(() => CourseSectionSubject, {
+    nullable: false,
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'id_cursado' })
   courseSectionSubject: CourseSectionSubject;
 
@@ -21,7 +30,10 @@ export class Schedule {
   @JoinColumn({ name: 'id_hora_catedra' })
   classHour: ClassHour;
 
-  @ManyToOne(() => Day, (day) => day.schedules, { nullable: false, onDelete: 'RESTRICT' })
+  @ManyToOne(() => Day, (day) => day.schedules, {
+    nullable: false,
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'id_dia' })
   day: Day;
 

@@ -68,7 +68,10 @@ export class UserActivationService {
   }
 
   async sendActivationCode(delivery: ActivationDelivery): Promise<void> {
-    this.emailService.sendActivationButtonEmail(delivery.email, delivery.code);
+    await this.emailService.sendActivationButtonEmail(
+      delivery.email,
+      delivery.code,
+    );
   }
 
   async verifyCode(
@@ -261,8 +264,7 @@ export class UserActivationService {
     }
 
     return {
-      message:
-        'Si la cuenta existe, se enviará un código de verificación.',
+      message: 'Si la cuenta existe, se enviará un código de verificación.',
     };
   }
 

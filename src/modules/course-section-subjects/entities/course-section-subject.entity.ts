@@ -30,7 +30,7 @@ export class CourseSectionSubject {
   status: string;
 
   // --- Relaciones inversas agregadas para el Módulo 3 ---
-  
+
   @OneToMany(() => TeacherAssignment, (ta) => ta.courseSectionSubject)
   teacherAssignments: TeacherAssignment[];
 

@@ -31,7 +31,8 @@ export class CreateAsignaturaDto {
   year: number;
 
   @ApiProperty({
-    description: 'Identificador del régimen de cursado (ej. cuatrimestral, anual)',
+    description:
+      'Identificador del régimen de cursado (ej. cuatrimestral, anual)',
     example: 1,
     minimum: 1,
   })
@@ -49,7 +50,8 @@ export class CreateAsignaturaDto {
   weeklyHours: number;
 
   @ApiProperty({
-    description: 'Indica si la materia admite la asignación de múltiples docentes en simultáneo',
+    description:
+      'Indica si la materia admite la asignación de múltiples docentes en simultáneo',
     example: false,
   })
   @IsBoolean()
@@ -68,7 +70,8 @@ export class CreateAsignaturaDto {
   maxTeachers?: number | null;
 
   @ApiProperty({
-    description: 'Identificador del plan de estudio al que pertenece la materia',
+    description:
+      'Identificador del plan de estudio al que pertenece la materia',
     example: 1,
     minimum: 1,
   })
