@@ -8,12 +8,15 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TeachersService } from './teachers.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
 
 @Controller('teachers')
+@UseGuards(JwtAuthGuard)
 export class TeachersController {
   constructor(private readonly teachersService: TeachersService) {}
 
@@ -23,8 +26,18 @@ export class TeachersController {
   }
 
   @Get()
-  findAll(@Query('dni') dni?: string, @Query('lastName') lastName?: string) {
-    return this.teachersService.search(dni, lastName);
+  findAll(
+    @Query('dni') dni?: string,
+    @Query('lastName') lastName?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.teachersService.search(
+      dni,
+      lastName,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 15,
+    );
   }
 
   @Get(':id')

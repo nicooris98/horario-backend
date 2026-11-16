@@ -8,12 +8,15 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TeacherAssignmentsService } from './teacher-assignments.service';
 import { CreateTeacherAssignmentDto } from './dto/create-teacher-assignment.dto';
 import { UpdateTeacherAssignmentDto } from './dto/update-teacher-assignment.dto';
 
 @Controller('teacher-assignments')
+@UseGuards(JwtAuthGuard)
 export class TeacherAssignmentsController {
   constructor(
     private readonly teacherAssignmentsService: TeacherAssignmentsService,

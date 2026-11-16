@@ -37,37 +37,38 @@ export class TeachersService {
     return this.repository.save(this.repository.create(data));
   }
 
-  findAll() {
-    return this.repository.find({ order: { id: 'ASC' } });
-  }
-
-  async search(dni?: string, lastName?: string) {
-    if (dni === undefined && lastName === undefined) return this.findAll();
-
+  async search(dni?: string, lastName?: string, page = 1, limit = 15) {
+    const take = Math.min(Math.max(Number.isFinite(limit) ? limit : 15, 1), 50);
+    const currentPage = Math.max(Number.isFinite(page) ? page : 1, 1);
     const where: FindOptionsWhere<Teacher> = {};
-    if (dni !== undefined) where.dni = this.cleanDni(dni);
-    if (lastName !== undefined) {
-      where.lastName = ILike(`%${requireText(lastName, 'lastName')}%`);
+
+    if (dni?.trim()) {
+      const digits = dni.replace(/\D/g, '');
+      if (!digits) return { items: [], total: 0 };
+      where.dni = ILike(`%${digits}%`);
+    }
+    if (lastName?.trim()) {
+      where.lastName = ILike(`%${lastName.trim()}%`);
     }
 
-    const found = await this.repository.find({
+    // El DNI y el apellido filtran toda la tabla. page/limit solo recortan ese resultado.
+    const [found, total] = await this.repository.findAndCount({
       where,
-      order: { lastName: 'ASC', firstName: 'ASC' },
+      order: { lastName: 'ASC', firstName: 'ASC', id: 'ASC' },
+      skip: (currentPage - 1) * take,
+      take,
     });
-    if (!found.length) {
-      const criteria = [
-        dni !== undefined && `DNI ${where.dni as string}`,
-        lastName !== undefined && `apellido "${lastName.trim()}"`,
-      ].filter(Boolean);
-      throw new NotFoundException(
-        `No se encontraron docentes con ${criteria.join(' y ')}`,
-      );
-    }
-    return this.withCurrentAssignments(found);
+
+    return {
+      items: await this.withCurrentAssignments(found),
+      total,
+    };
   }
 
   // HU-M2-02: la búsqueda muestra también los cargos vigentes de cada docente.
   private async withCurrentAssignments(teachers: Teacher[]) {
+    if (teachers.length === 0) return [];
+
     const current = await this.assignments.find({
       where: activeOn({ teacher: { id: In(teachers.map((t) => t.id)) } }),
       relations: {
