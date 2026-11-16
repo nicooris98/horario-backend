@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { findRef, pick } from '../../common/helpers';
+import { STUDY_PLAN_STATUS } from '../study-plans/study-plan-status';
 import { Regime } from '../regimes/entities/regime.entity';
 import { StudyPlan } from '../study-plans/entities/study-plans.entity';
 import { CreateAsignaturaDto } from './dto/create-asignatura.dto';
@@ -43,6 +44,7 @@ export class SubjectsService {
       'Study plan',
     );
     const regime = await findRef(manager, Regime, dto.regimeId, 'Regime');
+    this.assertPlanNotArchived(studyPlan);
 
     this.validateSubjectData(dto, studyPlan.durationYears);
     await this.assertUniqueNameInPlan(normalizedName, studyPlan.id);
@@ -98,6 +100,7 @@ export class SubjectsService {
         dto.studyPlanId,
         'Study plan',
       );
+      this.assertPlanNotArchived(subject.studyPlan);
     }
     if (dto.regimeId !== undefined) {
       subject.regime = await findRef(manager, Regime, dto.regimeId, 'Regime');
@@ -162,6 +165,14 @@ export class SubjectsService {
     return this.repository.save(subject);
   }
 
+  private assertPlanNotArchived(plan: StudyPlan) {
+    if (plan.status === STUDY_PLAN_STATUS.ARCHIVADO) {
+      throw new BadRequestException(
+        'No se pueden gestionar materias de un plan de estudio archivado',
+      );
+    }
+  }
+
   private resolveMaxTeachers(
     allowsMultiple: boolean,
     maxTeachers?: number | null,
@@ -187,7 +198,9 @@ export class SubjectsService {
     }
 
     if (!Number.isInteger(data.year) || data.year < 1) {
-      throw new BadRequestException('El año de cursado debe ser mayor o igual a 1');
+      throw new BadRequestException(
+        'El año de cursado debe ser mayor o igual a 1',
+      );
     }
 
     if (data.year > planDurationYears) {
@@ -197,11 +210,15 @@ export class SubjectsService {
     }
 
     if (!Number.isInteger(data.weeklyHours) || data.weeklyHours < 1) {
-      throw new BadRequestException('Las horas semanales deben ser un entero positivo');
+      throw new BadRequestException(
+        'Las horas semanales deben ser un entero positivo',
+      );
     }
 
     if (typeof data.allowsMultipleTeachers !== 'boolean') {
-      throw new BadRequestException('allowsMultipleTeachers debe ser un valor booleano');
+      throw new BadRequestException(
+        'allowsMultipleTeachers debe ser un valor booleano',
+      );
     }
 
     if (data.allowsMultipleTeachers) {

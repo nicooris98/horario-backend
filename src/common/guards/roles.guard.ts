@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { Request } from 'express';
 import { User } from '../../modules/users/entities/user.entity';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { RoleName } from '../constants/roles';
@@ -24,7 +25,9 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const user = context.switchToHttp().getRequest().user as User | undefined;
+    const user = context
+      .switchToHttp()
+      .getRequest<Request & { user?: User }>().user;
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Credenciales inválidas');

@@ -37,7 +37,9 @@ describe('PermissionsGuard', () => {
 
   it('deja pasar si el endpoint no tiene @Permissions', async () => {
     reflector.getAllAndOverride.mockReturnValue(undefined);
-    await expect(guard.canActivate(mockContext(requestUser))).resolves.toBe(true);
+    await expect(guard.canActivate(mockContext(requestUser))).resolves.toBe(
+      true,
+    );
   });
 
   it('tira 401 si no hay usuario', async () => {
@@ -47,17 +49,31 @@ describe('PermissionsGuard', () => {
     );
   });
 
+  it('tira 401 si el usuario esta inactivo en la base de datos', async () => {
+    reflector.getAllAndOverride.mockReturnValue(['roles.read']);
+    findOne.mockResolvedValue({ isActive: false, roles: [] });
+    await expect(guard.canActivate(mockContext(requestUser))).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
   it('deja pasar si el usuario tiene todos los permisos pedidos', async () => {
     reflector.getAllAndOverride.mockReturnValue(['roles.read', 'roles.update']);
     findOne.mockResolvedValue({
+      isActive: true,
       roles: [role(true, ['roles.read', 'roles.update', 'users.read'])],
     });
-    await expect(guard.canActivate(mockContext(requestUser))).resolves.toBe(true);
+    await expect(guard.canActivate(mockContext(requestUser))).resolves.toBe(
+      true,
+    );
   });
 
   it('tira 403 si le falta alguno de los permisos', async () => {
     reflector.getAllAndOverride.mockReturnValue(['roles.read', 'roles.update']);
-    findOne.mockResolvedValue({ roles: [role(true, ['roles.read'])] });
+    findOne.mockResolvedValue({
+      isActive: true,
+      roles: [role(true, ['roles.read'])],
+    });
     await expect(guard.canActivate(mockContext(requestUser))).rejects.toThrow(
       ForbiddenException,
     );
@@ -65,7 +81,10 @@ describe('PermissionsGuard', () => {
 
   it('tira 403 si el permiso viene de un rol inactivo', async () => {
     reflector.getAllAndOverride.mockReturnValue(['roles.read']);
-    findOne.mockResolvedValue({ roles: [role(false, ['roles.read'])] });
+    findOne.mockResolvedValue({
+      isActive: true,
+      roles: [role(false, ['roles.read'])],
+    });
     await expect(guard.canActivate(mockContext(requestUser))).rejects.toThrow(
       ForbiddenException,
     );

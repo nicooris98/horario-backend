@@ -6,10 +6,7 @@ import { TeacherAssignmentsService } from './teacher-assignments.service';
 import { SchedulesModule } from '../schedules/schedules.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([TeacherAssignment]),
-    SchedulesModule,
-  ],
+  imports: [TypeOrmModule.forFeature([TeacherAssignment]), SchedulesModule],
   controllers: [TeacherAssignmentsController],
   providers: [TeacherAssignmentsService],
   exports: [TeacherAssignmentsService],

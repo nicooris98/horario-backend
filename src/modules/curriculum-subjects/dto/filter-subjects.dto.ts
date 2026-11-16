@@ -4,7 +4,8 @@ import { IsInt, IsOptional, Min } from 'class-validator';
 
 export class FilterSubjectsDto {
   @ApiPropertyOptional({
-    description: 'Filtrar las materias pertenecientes a un plan de estudio específico por su ID',
+    description:
+      'Filtrar las materias pertenecientes a un plan de estudio específico por su ID',
     example: 1,
     minimum: 1,
   })
@@ -14,4 +15,3 @@ export class FilterSubjectsDto {
   @Min(1)
   studyPlanId?: number;
 }
-

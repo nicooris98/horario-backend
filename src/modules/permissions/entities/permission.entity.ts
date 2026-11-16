@@ -26,10 +26,10 @@ export class Permission extends AuditEntity {
   })
   code: string; // ej: 'roles.create', 'users.read'
 
-  @Column({ 
+  @Column({
     name: 'is_active',
-    type: 'boolean', 
-    default: true, 
+    type: 'boolean',
+    default: true,
   })
   isActive: boolean;
 

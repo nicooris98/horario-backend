@@ -5,9 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, QueryFailedError, Repository } from 'typeorm';
-import { FOREIGN_KEY_VIOLATION } from '../../common/constants/database.constants';
-import { pick, requireText } from '../../common/helpers';
+import { ILike, Repository } from 'typeorm';
+import { deactivate, pick, requireText } from '../../common/helpers';
 import {
   FIELDS,
   POSITION_TYPE_STATUSES,
@@ -58,19 +57,9 @@ export class PositionTypesService {
 
   async remove(id: number) {
     const item = await this.findOne(id);
-    try {
-      return await this.repository.remove(item);
-    } catch (error) {
-      if (
-        error instanceof QueryFailedError &&
-        (error.driverError as { code?: string }).code === FOREIGN_KEY_VIOLATION
-      ) {
-        throw new ConflictException(
-          `Position type ${id} has assignments and cannot be deleted; deactivate it instead`,
-        );
-      }
-      throw error;
-    }
+    return this.repository.save(
+      deactivate(item, 'El tipo de cargo ya se encuentra inactivo'),
+    );
   }
 
   // "Interino" e "interino" cuentan como el mismo tipo de cargo.

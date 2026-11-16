@@ -1,19 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
-  findRef,
-  optionalStatus,
+  deactivate,
   pick,
   requireInt,
   requireText,
 } from '../../common/helpers';
+import { UpdateStatusDto } from '../../common/dto/update-status.dto';
+import { STUDY_PLAN_STATUS } from '../study-plans/study-plan-status';
 import { StudyPlanAcademicCycle } from '../study-plan-academic-cycles/entities/study-plan-academic-cycle.entity';
 import { CreateCourseSectionDto } from './dto/create-course-section.dto';
 import { UpdateCourseSectionDto } from './dto/update-course-section.dto';
 import { CourseSection } from './entities/course-section.entity';
 
-const FIELDS = ['courseYear', 'section', 'status'] as const;
+const FIELDS = ['courseYear', 'section'] as const;
 const RELATIONS = {
   studyPlanAcademicCycle: { studyPlan: true, academicCycle: true, shift: true },
 };
@@ -31,6 +36,7 @@ export class CourseSectionsService {
       this.repository.create({
         ...pick(dto, [...FIELDS]),
         section: dto.section.trim(),
+        status: 'ACTIVO',
         studyPlanAcademicCycle: await this.findCycle(
           dto.studyPlanAcademicCycleId,
         ),
@@ -64,24 +70,48 @@ export class CourseSectionsService {
     return this.repository.save(item);
   }
 
-  async remove(id: number) {
-    return this.repository.remove(await this.findOne(id));
+  async updateStatus(id: number, dto: UpdateStatusDto) {
+    const item = await this.findOne(id);
+    item.status = dto.status;
+    return this.repository.save(item);
   }
 
-  private findCycle(id: number) {
-    return findRef(
-      this.repository.manager,
-      StudyPlanAcademicCycle,
-      id,
-      'Study plan academic cycle',
+  async remove(id: number) {
+    const item = await this.findOne(id);
+    return this.repository.save(
+      deactivate(item, 'El curso/división ya se encuentra inactivo'),
     );
   }
 
-  private validate(
-    s: Pick<CourseSection, 'courseYear' | 'section'> & { status?: string },
-  ) {
+  private async findCycle(id: number) {
+    const cycle = await this.repository.manager.findOne(
+      StudyPlanAcademicCycle,
+      {
+        where: { id: requireInt(id, 'studyPlanAcademicCycleId') },
+        relations: { studyPlan: true, academicCycle: true, shift: true },
+      },
+    );
+    if (!cycle) {
+      throw new NotFoundException(`Study plan academic cycle ${id} not found`);
+    }
+    if (cycle.academicCycle.status !== 'ACTIVO') {
+      throw new BadRequestException(
+        `Academic cycle ${cycle.academicCycle.id} is inactive`,
+      );
+    }
+    if (cycle.shift.status !== 'ACTIVO') {
+      throw new BadRequestException(`Shift ${cycle.shift.id} is inactive`);
+    }
+    if (cycle.studyPlan.status === STUDY_PLAN_STATUS.ARCHIVADO) {
+      throw new BadRequestException(
+        'No se pueden crear divisiones en un plan de estudio archivado',
+      );
+    }
+    return cycle;
+  }
+
+  private validate(s: Pick<CourseSection, 'courseYear' | 'section'>) {
     requireInt(s.courseYear, 'courseYear');
     requireText(s.section, 'section');
-    optionalStatus(s.status);
   }
 }

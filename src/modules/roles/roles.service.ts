@@ -1,6 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import {
+  isAdminRoleName,
+  isCriticalPermissionCode,
+} from '../../common/constants/roles';
 import { Role } from './entities/role.entity';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -44,6 +52,7 @@ export class RolesService {
 
   async update(id: number, updateRoleDto: UpdateRoleDto) {
     const role = await this.findOne(id);
+    this.assertAdminRoleProtected(role, updateRoleDto);
     Object.assign(role, updateRoleDto);
     return this.roleRepository.save(role);
   }
@@ -59,6 +68,11 @@ export class RolesService {
       });
       if (!role) {
         throw new NotFoundException(`Role #${id} not found`);
+      }
+      if (!isActive && isAdminRoleName(role.name)) {
+        throw new ConflictException(
+          'No se puede desactivar el rol admin: el sistema quedaría sin administración',
+        );
       }
       role.isActive = isActive;
       return manager.save(Role, role);
@@ -79,8 +93,34 @@ export class RolesService {
 
   async removePermission(roleId: number, permissionId: number) {
     const role = await this.findOneWithPermissions(roleId);
+    const permission = role.permissions.find((p) => p.id === permissionId);
+    if (
+      permission &&
+      isAdminRoleName(role.name) &&
+      isCriticalPermissionCode(permission.code)
+    ) {
+      throw new ConflictException(
+        `No se puede quitar el permiso crítico "${permission.code}" del rol admin`,
+      );
+    }
     role.permissions = role.permissions.filter((p) => p.id !== permissionId);
     await this.roleRepository.save(role);
     return role;
+  }
+
+  // El rol admin no se puede renombrar ni desactivar por update(): ambos
+  // caminos romperían los chequeos @Roles('admin') y el guard de permisos.
+  private assertAdminRoleProtected(role: Role, dto: UpdateRoleDto) {
+    if (!isAdminRoleName(role.name)) {
+      return;
+    }
+    if (dto.isActive === false) {
+      throw new ConflictException(
+        'No se puede desactivar el rol admin: el sistema quedaría sin administración',
+      );
+    }
+    if (dto.name !== undefined && dto.name.trim().toLowerCase() !== 'admin') {
+      throw new ConflictException('No se puede renombrar el rol admin');
+    }
   }
 }

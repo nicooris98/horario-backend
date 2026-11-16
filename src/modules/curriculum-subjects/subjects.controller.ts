@@ -11,8 +11,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
   ApiBody,
+  ApiCookieAuth,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -28,7 +28,7 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 
 @ApiTags('Subjects')
-@ApiBearerAuth()
+@ApiCookieAuth('access_token')
 @Controller('subjects')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class SubjectsController {
@@ -199,16 +199,6 @@ export class SubjectsController {
         statusCode: 403,
         message: 'Forbidden resource',
         error: 'Forbidden',
-      },
-    },
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Error interno del servidor al procesar la consulta.',
-    schema: {
-      example: {
-        statusCode: 500,
-        message: 'Internal server error',
       },
     },
   })
@@ -561,8 +551,7 @@ export class SubjectsController {
   })
   @ApiResponse({
     status: 409,
-    description:
-      'Conflicto. La materia ya se encuentra inactiva previamente.',
+    description: 'Conflicto. La materia ya se encuentra inactiva previamente.',
     schema: {
       example: {
         statusCode: 409,

@@ -1,7 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { pick, requireInt, requireTimeOrder } from '../../common/helpers';
+import {
+  pick,
+  removeOrConflict,
+  requireInt,
+  requireTimeOrder,
+} from '../../common/helpers';
 import { CreateClassHourDto } from './dto/create-class-hour.dto';
 import { UpdateClassHourDto } from './dto/update-class-hour.dto';
 import { ClassHour } from './entities/class-hour.entity';
@@ -17,9 +22,7 @@ export class ClassHoursService {
 
   create(dto: CreateClassHourDto) {
     this.validate(dto);
-    return this.repository.save(
-      this.repository.create(pick(dto, [...FIELDS])),
-    );
+    return this.repository.save(this.repository.create(pick(dto, [...FIELDS])));
   }
 
   findAll() {
@@ -40,7 +43,11 @@ export class ClassHoursService {
   }
 
   async remove(id: number) {
-    return this.repository.remove(await this.findOne(id));
+    return removeOrConflict(
+      this.repository,
+      await this.findOne(id),
+      'La hora cátedra está en uso por horarios y no se puede eliminar',
+    );
   }
 
   private validate(h: CreateClassHourDto) {

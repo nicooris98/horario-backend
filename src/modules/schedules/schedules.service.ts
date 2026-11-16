@@ -1,11 +1,20 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Schedule } from './entities/schedule.entity';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
 import { ScheduleOverlapService } from './schedule-overlap.service';
-import { requireDateOrder } from '../../common/helpers'; // Reutilizamos el helper del proyecto
+import { findRef, requireDateOrder, requireInt } from '../../common/helpers';
+import { CourseSectionSubject } from '../course-section-subjects/entities/course-section-subject.entity';
+import { Semester } from '../semesters/entities/semester.entity';
+import { ClassHour } from '../class-hours/entities/class-hour.entity';
+import { Day } from './entities/day.entity';
 
 @Injectable()
 export class SchedulesService {
@@ -17,7 +26,12 @@ export class SchedulesService {
 
   async create(dto: CreateScheduleDto) {
     // 1. Validar orden de fechas (usando el helper del proyecto)
-    requireDateOrder(dto.fechaDesde, dto.fechaHasta, 'fechaDesde', 'fechaHasta');
+    requireDateOrder(
+      dto.fechaDesde,
+      dto.fechaHasta,
+      'fechaDesde',
+      'fechaHasta',
+    );
 
     // 2. Verificar solapamiento
     const conflicts = await this.overlapService.checkOverlap({
@@ -32,16 +46,17 @@ export class SchedulesService {
       // Tomamos el primer conflicto para mostrar un mensaje claro
       const c = conflicts[0];
       throw new ConflictException(
-        `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada el ${c.conflictoDesde} hasta ${c.conflictoHasta || 'indefinido'} (Horario existente ID: ${c.idHorarioExistente}).`
+        `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada el ${c.conflictoDesde} hasta ${c.conflictoHasta || 'indefinido'} (Horario existente ID: ${c.idHorarioExistente}).`,
       );
     }
 
     // 3. Guardar
+    const refs = await this.resolveRefs(dto);
     const schedule = this.repository.create({
-      courseSectionSubject: { id: dto.idCursado },
-      semester: { id: dto.idCuatrimestre },
-      classHour: { id: dto.idHoraCatedra },
-      day: { id: dto.idDia },
+      courseSectionSubject: refs.courseSectionSubject,
+      semester: refs.semester,
+      classHour: refs.classHour,
+      day: refs.day,
       startDate: dto.fechaDesde,
       endDate: dto.fechaHasta || null,
     });
@@ -86,11 +101,17 @@ export class SchedulesService {
       idHoraCatedra: dto.idHoraCatedra ?? schedule.classHour.id,
       idDia: dto.idDia ?? schedule.day.id,
       fechaDesde: dto.fechaDesde ?? schedule.startDate,
-      fechaHasta: dto.fechaHasta !== undefined ? dto.fechaHasta : schedule.endDate,
+      fechaHasta:
+        dto.fechaHasta !== undefined ? dto.fechaHasta : schedule.endDate,
     };
 
     // Validar orden de fechas
-    requireDateOrder(merged.fechaDesde, merged.fechaHasta, 'fechaDesde', 'fechaHasta');
+    requireDateOrder(
+      merged.fechaDesde,
+      merged.fechaHasta,
+      'fechaDesde',
+      'fechaHasta',
+    );
 
     // Verificar solapamiento (excluyendo el ID actual)
     const conflicts = await this.overlapService.checkOverlap({
@@ -105,17 +126,23 @@ export class SchedulesService {
     if (conflicts.length > 0) {
       const c = conflicts[0];
       throw new ConflictException(
-        `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada (Horario existente ID: ${c.idHorarioExistente}).`
+        `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada (Horario existente ID: ${c.idHorarioExistente}).`,
       );
     }
 
     // Actualizamos
+    const refs = await this.resolveRefs({
+      idCursado: merged.idCursado,
+      idCuatrimestre: merged.idCuatrimestre,
+      idHoraCatedra: merged.idHoraCatedra,
+      idDia: merged.idDia,
+    });
     await this.repository.save({
       id,
-      courseSectionSubject: { id: merged.idCursado },
-      semester: { id: merged.idCuatrimestre },
-      classHour: { id: merged.idHoraCatedra },
-      day: { id: merged.idDia },
+      courseSectionSubject: refs.courseSectionSubject,
+      semester: refs.semester,
+      classHour: refs.classHour,
+      day: refs.day,
       startDate: merged.fechaDesde,
       endDate: merged.fechaHasta || null,
     });
@@ -124,10 +151,62 @@ export class SchedulesService {
   }
 
   async remove(id: number) {
-    // Nota: Según las reglas de negocio (RN-11), los horarios no se borran físicamente.
-    // Esto debería ser una baja lógica (ej. fecha_hasta = hoy).
-    // Por ahora, dejamos un remove físico para pruebas del endpoint.
+    // RN-11: los horarios no se borran físicamente; se marcan como finalizados.
     const schedule = await this.findOne(id);
-    return this.repository.remove(schedule);
+    const now = new Date();
+    const today = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
+      .toISOString()
+      .slice(0, 10);
+    if (schedule.endDate !== null && schedule.endDate <= today) {
+      throw new ConflictException(`El horario #${id} ya está finalizado`);
+    }
+    schedule.endDate = schedule.startDate > today ? schedule.startDate : today;
+    return this.repository.save(schedule);
+  }
+
+  // El ECCD debe existir y tener activos el espacio curricular y la división
+  // para que se le puedan cargar horarios.
+  private async findActiveEccd(id: number) {
+    const eccd = await this.repository.manager.findOne(CourseSectionSubject, {
+      where: { id: requireInt(id, 'idCursado') },
+      relations: { subject: true, courseSection: true },
+    });
+    if (!eccd) {
+      throw new NotFoundException(`Course section subject ${id} not found`);
+    }
+    if (eccd.status !== 'ACTIVO') {
+      throw new BadRequestException(
+        `Course section subject ${eccd.id} is inactive`,
+      );
+    }
+    if (eccd.subject?.status !== 'ACTIVO') {
+      throw new BadRequestException(`Subject ${eccd.subject.id} is inactive`);
+    }
+    if (eccd.courseSection?.status !== 'ACTIVO') {
+      throw new BadRequestException(
+        `Course section ${eccd.courseSection.id} is inactive`,
+      );
+    }
+    return eccd;
+  }
+
+  private resolveRefs(ids: {
+    idCursado: number;
+    idCuatrimestre: number;
+    idHoraCatedra: number;
+    idDia: number;
+  }) {
+    const manager = this.repository.manager;
+    return Promise.all([
+      this.findActiveEccd(ids.idCursado),
+      findRef(manager, Semester, ids.idCuatrimestre, 'Semester'),
+      findRef(manager, ClassHour, ids.idHoraCatedra, 'Class hour'),
+      findRef(manager, Day, ids.idDia, 'Day'),
+    ]).then(([courseSectionSubject, semester, classHour, day]) => ({
+      courseSectionSubject,
+      semester,
+      classHour,
+      day,
+    }));
   }
 }

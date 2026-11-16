@@ -2,11 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
-  optionalStatus,
+  deactivate,
   pick,
   requireDateOrder,
   requireInt,
 } from '../../common/helpers';
+import { UpdateStatusDto } from '../../common/dto/update-status.dto';
 import { CreateAcademicCycleDto } from './dto/create-academic-cycle.dto';
 import { UpdateAcademicCycleDto } from './dto/update-academic-cycle.dto';
 import { AcademicCycle } from './entities/academic-cycle.entity';
@@ -19,11 +20,12 @@ export class AcademicCyclesService {
   ) {}
 
   create(dto: CreateAcademicCycleDto) {
-    this.validate(dto.year, dto.startDate, dto.endDate, dto.status);
+    this.validate(dto.year, dto.startDate, dto.endDate);
     return this.repository.save(
-      this.repository.create(
-        pick(dto, ['year', 'startDate', 'endDate', 'status']),
-      ),
+      this.repository.create({
+        ...pick(dto, ['year', 'startDate', 'endDate']),
+        status: 'ACTIVO',
+      }),
     );
   }
 
@@ -39,23 +41,26 @@ export class AcademicCyclesService {
 
   async update(id: number, dto: UpdateAcademicCycleDto) {
     const item = await this.findOne(id);
-    Object.assign(item, pick(dto, ['year', 'startDate', 'endDate', 'status']));
-    this.validate(item.year, item.startDate, item.endDate, item.status);
+    Object.assign(item, pick(dto, ['year', 'startDate', 'endDate']));
+    this.validate(item.year, item.startDate, item.endDate);
+    return this.repository.save(item);
+  }
+
+  async updateStatus(id: number, dto: UpdateStatusDto) {
+    const item = await this.findOne(id);
+    item.status = dto.status;
     return this.repository.save(item);
   }
 
   async remove(id: number) {
-    return this.repository.remove(await this.findOne(id));
+    const item = await this.findOne(id);
+    return this.repository.save(
+      deactivate(item, 'El ciclo lectivo ya se encuentra inactivo'),
+    );
   }
 
-  private validate(
-    year: number,
-    startDate: string,
-    endDate: string,
-    status?: string,
-  ) {
+  private validate(year: number, startDate: string, endDate: string) {
     requireInt(year, 'year');
     requireDateOrder(startDate, endDate, 'startDate', 'endDate');
-    optionalStatus(status);
   }
 }

@@ -5,15 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  Between,
-  FindOptionsWhere,
-  IsNull,
-  Not,
-  QueryFailedError,
-  Repository,
-} from 'typeorm';
-import { FOREIGN_KEY_VIOLATION } from '../../common/constants/database.constants';
+import { Between, FindOptionsWhere, IsNull, Not, Repository } from 'typeorm';
 import { findRef, requireDateOrder, requireInt } from '../../common/helpers';
 import { CourseSectionSubject } from '../course-section-subjects/entities/course-section-subject.entity';
 import { CourseSection } from '../course-sections/entities/course-section.entity';
@@ -149,19 +141,12 @@ export class TeacherAssignmentsService {
 
   async remove(id: number) {
     const item = await this.findOne(id);
-    try {
-      return await this.repository.remove(item);
-    } catch (error) {
-      if (
-        error instanceof QueryFailedError &&
-        (error.driverError as { code?: string }).code === FOREIGN_KEY_VIOLATION
-      ) {
-        throw new ConflictException(
-          `Teacher assignment ${id} has substitutes and cannot be deleted`,
-        );
-      }
-      throw error;
+    const date = today();
+    if (item.endDate !== null && item.endDate <= date) {
+      throw new ConflictException(`Teacher assignment ${id} already ended`);
     }
+    item.endDate = item.startDate > date ? item.startDate : date;
+    return this.repository.save(item);
   }
 
   // Busca las referencias y aplica las reglas que dependen del tipo de cargo.
@@ -314,6 +299,7 @@ export class TeacherAssignmentsService {
 
   // Reglas que dependen de las otras asignaciones con fechas que se cruzan.
   private async validate(draft: Draft, exceptId?: number) {
+    this.assertActiveCourseSectionSubject(draft.courseSectionSubject);
     const others: FindOptionsWhere<TeacherAssignment> = exceptId
       ? { id: Not(exceptId) }
       : {};
@@ -349,6 +335,7 @@ export class TeacherAssignmentsService {
           `Teacher assignment ${titular.id} already has a substitute for those dates (id ${otherSubstitute.id})`,
         );
       }
+      await this.assertNoScheduleConflict(draft);
       return;
     }
 
@@ -374,46 +361,72 @@ export class TeacherAssignmentsService {
       );
     }
 
-    // --- NUEVO: Validación de solapamiento horario (Módulo 3.2) ---
-    // Si el ECCD ya tiene horarios cargados, verificamos que el docente
-    // no choque con otras clases que ya tenga en esos mismos días/franjas.
+    await this.assertNoScheduleConflict(draft);
+  }
+
+  // Si el ECCD ya tiene horarios cargados, verificamos que el docente
+  // no choque con otras clases que ya tenga en esos mismos días/franjas.
+  // Aplica tanto a titulares como a suplentes.
+  private async assertNoScheduleConflict(draft: Draft) {
     const schedules = await this.repository.manager.find(Schedule, {
       where: { courseSectionSubject: { id: draft.courseSectionSubject.id } },
       relations: { day: true, classHour: true },
     });
 
-    if (schedules.length > 0) {
-      for (const schedule of schedules) {
+    // Las franjas de un ECCD son pocas pero cada checkOverlap es una query
+    // pesada: se ejecutan en paralelo y se reporta el primer conflicto.
+    const results = await Promise.all(
+      schedules.map(async (schedule) => {
         const conflicts = await this.scheduleOverlapService.checkOverlap({
           idEccd: draft.courseSectionSubject.id,
           idDia: schedule.day.id,
           idHoraCatedra: schedule.classHour.id,
-          fechaDesde: startDate,
-          fechaHasta: endDate || null,
-          idDocente: draft.teacher.id, // <-- LÍNEA AGREGADA PARA FORZAR LA VALIDACIÓN
+          fechaDesde: draft.startDate,
+          fechaHasta: draft.endDate || null,
+          idDocente: draft.teacher.id,
         });
+        return conflicts.length > 0 ? { schedule, conflicts } : null;
+      }),
+    );
 
-        if (conflicts.length > 0) {
-          const c = conflicts[0];
-          throw new ConflictException(
-            `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada en el día ${schedule.day.name} (Horario existente ID: ${c.idHorarioExistente}).`,
-          );
-        }
-      }
+    const hit = results.find((r) => r !== null);
+    if (hit) {
+      const c = hit.conflicts[0];
+      throw new ConflictException(
+        `El docente ${c.nombreDocente} ${c.apellidoDocente} ya tiene una clase asignada en el día ${hit.schedule.day.name} (Horario existente ID: ${c.idHorarioExistente}).`,
+      );
     }
-    // --- FIN NUEVO ---
   }
 
+  // No se puede asignar docente sobre una división, materia o ECCD inactivos.
+  private assertActiveCourseSectionSubject(eccd: CourseSectionSubject) {
+    if (eccd.status !== 'ACTIVO') {
+      throw new BadRequestException(
+        `Course section subject ${eccd.id} is inactive`,
+      );
+    }
+    if (eccd.subject?.status !== 'ACTIVO') {
+      throw new BadRequestException(`Subject ${eccd.subject.id} is inactive`);
+    }
+    if (eccd.courseSection?.status !== 'ACTIVO') {
+      throw new BadRequestException(
+        `Course section ${eccd.courseSection.id} is inactive`,
+      );
+    }
+  }
+
+  // Solo cuentan las suplencias con vigencia actual o futura: una que ya
+  // terminó no debería bloquear cambios en la asignación titular.
   private hasSubstitutes(id: number) {
     return this.repository.exists({
-      where: { replacedAssignment: { id } },
+      where: overlapping({ replacedAssignment: { id } }, today(), null),
     });
   }
 
   private async findCourseSectionSubject(id: unknown) {
     const item = await this.repository.manager.findOne(CourseSectionSubject, {
       where: { id: requireInt(id, 'courseSectionSubjectId') },
-      relations: { subject: true },
+      relations: { subject: true, courseSection: true },
     });
     if (!item) {
       throw new NotFoundException(

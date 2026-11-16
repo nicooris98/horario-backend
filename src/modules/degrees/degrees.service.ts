@@ -11,21 +11,6 @@ import { UpdateDegreeDto } from './dto/update-degrees.dto';
 import { Degree } from './entities/degrees.entity';
 import { UpdateDegreeStatusDto } from './dto/update-degrees.dto';
 
-function isForeignKeyViolation(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null) return false;
-
-  if ('code' in error && error.code === '23503') return true;
-
-  if (!('driverError' in error)) return false;
-  const driverError = error.driverError;
-  return (
-    typeof driverError === 'object' &&
-    driverError !== null &&
-    'code' in driverError &&
-    driverError.code === '23503'
-  );
-}
-
 @Injectable()
 export class DegreeService {
   constructor(
@@ -72,7 +57,7 @@ export class DegreeService {
     const degree = await this.findOne(id);
 
     if (degree.status === 'INACTIVO') {
-    throw new ConflictException('La carrera ya se encuentra inactiva');
+      throw new ConflictException('La carrera ya se encuentra inactiva');
     }
 
     degree.status = 'INACTIVO';

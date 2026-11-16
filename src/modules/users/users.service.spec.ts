@@ -7,6 +7,7 @@ import { EntityManager, Repository } from 'typeorm';
 import { RolesService } from '../roles/roles.service';
 import { PermissionsService } from '../permissions/permissions.service';
 import { UsersService } from './users.service';
+import { UserActivationService } from './activation/user-activation.service';
 import { User } from './entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
 
@@ -43,6 +44,7 @@ describe('UsersService - asignación de roles', () => {
       );
     }),
     save: jest.fn(),
+    createQueryBuilder: jest.fn(),
     manager: {
       transaction: jest.fn(async (cb) => {
         inTransaction = true;
@@ -55,9 +57,14 @@ describe('UsersService - asignación de roles', () => {
     },
   };
   const roleRepository = { findBy: jest.fn() };
+  const activationService = {
+    createInitialChallenge: jest.fn().mockResolvedValue({}),
+    sendActivationCode: jest.fn().mockResolvedValue(undefined),
+  };
   const service = new UsersService(
     userRepository as unknown as Repository<User>,
     roleRepository as unknown as Repository<Role>,
+    activationService as unknown as UserActivationService,
   );
 
   const createDto = {
@@ -236,6 +243,54 @@ describe('UsersService - asignación de roles', () => {
       expect(userRepository.manager.transaction).not.toHaveBeenCalled();
       expectNoWrites();
     });
+
+    it('rechaza quitar el rol admin al último administrador activo', async () => {
+      storedUser = {
+        id: 10,
+        firstName: 'Admin',
+        lastName: 'Uno',
+        email: 'admin@test.com',
+        isActive: true,
+        isDisabled: false,
+        roles: [{ id: 1, name: 'admin', isActive: true } as Role],
+      };
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+      };
+      userRepository.createQueryBuilder.mockReturnValue(qb);
+
+      const error = await service.update(10, { role_ids: [2] }).catch((e) => e);
+
+      expect(error).toBeInstanceOf(BadRequestException);
+      expect(error.message).toContain('sin administradores activos');
+      expectNoWrites();
+    });
+
+    it('permite quitar el rol admin si queda otro administrador activo', async () => {
+      storedUser = {
+        id: 10,
+        firstName: 'Admin',
+        lastName: 'Uno',
+        email: 'admin@test.com',
+        isActive: true,
+        isDisabled: false,
+        roles: [{ id: 1, name: 'admin', isActive: true } as Role],
+      };
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      userRepository.createQueryBuilder.mockReturnValue(qb);
+
+      await service.update(10, { role_ids: [2] });
+
+      expect(txManager.save).toHaveBeenCalled();
+    });
   });
 });
 
@@ -243,14 +298,16 @@ describe('Concurrencia entre asignacion y desactivacion de roles', () => {
   // Simula los bloqueos de fila de Postgres: FOR SHARE es compartido y
   // FOR UPDATE espera a que se liberen todos los FOR SHARE (y viceversa).
   const createDb = () => {
-    const role = { id: 1, name: 'ADMIN', isActive: true };
+    const role = { id: 1, name: 'docente', isActive: true };
     const events: string[] = [];
     let sharedHolders = 0;
     let exclusive = false;
     const waiters: Array<() => void> = [];
     const wake = () => waiters.splice(0).forEach((w) => w());
     const acquire = async (mode: string) => {
-      while (mode === 'pessimistic_read' ? exclusive : exclusive || sharedHolders > 0) {
+      while (
+        mode === 'pessimistic_read' ? exclusive : exclusive || sharedHolders > 0
+      ) {
         await new Promise<void>((resolve) => waiters.push(resolve));
       }
       if (mode === 'pessimistic_read') sharedHolders++;
@@ -273,7 +330,10 @@ describe('Concurrencia entre asignacion y desactivacion de roles', () => {
           events.push('deactivate:role-locked');
           return { ...role };
         },
-        save: async (_e: unknown, entity: { roles?: unknown; isActive: boolean }) => {
+        save: async (
+          _e: unknown,
+          entity: { roles?: unknown; isActive: boolean },
+        ) => {
           await new Promise((resolve) => setTimeout(resolve, 5));
           if (entity.roles) {
             events.push('assign:user-saved');
@@ -312,9 +372,15 @@ describe('Concurrencia entre asignacion y desactivacion de roles', () => {
     const usersService = new UsersService(
       userRepository as unknown as Repository<User>,
       {} as Repository<Role>,
+      {
+        createInitialChallenge: jest.fn().mockResolvedValue({}),
+        sendActivationCode: jest.fn().mockResolvedValue(undefined),
+      } as unknown as UserActivationService,
     );
     const rolesService = new RolesService(
-      { manager: { transaction: db.transaction } } as unknown as Repository<Role>,
+      {
+        manager: { transaction: db.transaction },
+      } as unknown as Repository<Role>,
       {} as PermissionsService,
     );
 
@@ -349,9 +415,15 @@ describe('Concurrencia entre asignacion y desactivacion de roles', () => {
         manager: { transaction: db.transaction },
       } as unknown as Repository<User>,
       {} as Repository<Role>,
+      {
+        createInitialChallenge: jest.fn().mockResolvedValue({}),
+        sendActivationCode: jest.fn().mockResolvedValue(undefined),
+      } as unknown as UserActivationService,
     );
     const rolesService = new RolesService(
-      { manager: { transaction: db.transaction } } as unknown as Repository<Role>,
+      {
+        manager: { transaction: db.transaction },
+      } as unknown as Repository<Role>,
       {} as PermissionsService,
     );
 

@@ -25,7 +25,7 @@ export class AuthService {
   async createSession(email: string) {
     const user = await this.userService.findOneByEmail(email, true);
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || user.isDisabled) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
@@ -57,7 +57,7 @@ export class AuthService {
     ) {
       const user = await this.userService.findOneByEmail(normalizedEmail, true);
 
-      if (user?.isActive) {
+      if (user?.isActive && !user.isDisabled) {
         return {
           verificationRequired: false as const,
           accessToken: this.signToken(user),

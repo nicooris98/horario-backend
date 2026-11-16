@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { DataSource } from 'typeorm';
+import { Request } from 'express';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 import { User } from '../../modules/users/entities/user.entity';
 
@@ -28,11 +29,11 @@ export class PermissionsGuard implements CanActivate {
       return true; // el endpoint no pide permisos
     }
 
-    const requestUser = context.switchToHttp().getRequest().user as
-      | User
-      | undefined;
+    const requestUser = context
+      .switchToHttp()
+      .getRequest<Request & { user?: User }>().user;
 
-    if (!requestUser || !requestUser.isActive) {
+    if (!requestUser) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
@@ -43,12 +44,18 @@ export class PermissionsGuard implements CanActivate {
       relations: { roles: { permissions: true } },
     });
 
+    if (!user?.isActive) {
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
     // Solo cuentan los permisos de los roles ACTIVOS
     const userPermissions = (user?.roles ?? [])
       .filter((role) => role.isActive)
-      .flatMap((role) => (role.permissions ?? [])
-      .filter((permission) => permission.isActive)
-      .map((p) => p.code));
+      .flatMap((role) =>
+        (role.permissions ?? [])
+          .filter((permission) => permission.isActive)
+          .map((p) => p.code),
+      );
 
     // Hay que tener TODOS los permisos pedidos
     const hasAll = requiredPermissions.every((permission) =>
